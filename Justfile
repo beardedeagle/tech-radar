@@ -84,7 +84,7 @@ release version:
 
 # Regenerate after changing workflow dependencies. Review the lockfile diff.
 actions-lock: _actions-lock
-    "{{ actions_lock_dir }}/gh-actions-lock{{ exe }}"
+    "{{ actions_lock_dir }}/gh-actions-lock{{ exe }}" --no-narrow --relock
 
 # Verify remote action provenance and analyze Go and workflow code.
 security: actions-verify codeql
@@ -96,9 +96,9 @@ codeql: _codeql
     rm -rf output/codeql
     mkdir -p output/codeql
     "{{ codeql_dir }}/codeql/codeql{{ exe }}" database create output/codeql/go --language=go --command='just _codeql-go-extract' --no-tracing --source-root=.
-    "{{ codeql_dir }}/codeql/codeql{{ exe }}" database analyze output/codeql/go codeql/go-queries:codeql-suites/go-security-extended.qls --format=sarifv2.1.0 --output=output/codeql/go.sarif --threads=2
+    "{{ codeql_dir }}/codeql/codeql{{ exe }}" database analyze output/codeql/go codeql/go-queries:codeql-suites/go-security-extended.qls --format=sarifv2.1.0 --sarif-category=go --output=output/codeql/go.sarif --threads=2
     "{{ codeql_dir }}/codeql/codeql{{ exe }}" database create output/codeql/actions --language=actions --source-root=.
-    "{{ codeql_dir }}/codeql/codeql{{ exe }}" database analyze output/codeql/actions codeql/actions-queries:codeql-suites/actions-security-extended.qls --format=sarifv2.1.0 --output=output/codeql/actions.sarif --threads=2
+    "{{ codeql_dir }}/codeql/codeql{{ exe }}" database analyze output/codeql/actions codeql/actions-queries:codeql-suites/actions-security-extended.qls --format=sarifv2.1.0 --sarif-category=actions --output=output/codeql/actions.sarif --threads=2
 
 # Extract the root module directly; autobuild can rewrite module pins.
 [private]

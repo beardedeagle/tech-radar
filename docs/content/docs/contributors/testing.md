@@ -30,9 +30,9 @@ Assert the finding or output exists before checking its properties. Tests should
 
 `just security` verifies the workflow dependency lockfile against GitHub and runs CodeQL's security-extended queries for Go and GitHub Actions. CodeQL downloads a checksum-verified bundle on first use, about 700 MB on Linux and Windows or 1.3 GB on macOS. Results go to `output/codeql/*.sarif`; CI uploads them to the repository's code scanning view. Query findings need review; the CLI exits successfully when analysis completes, even when it finds alerts.
 
-Run `just actions-lock` after changing an action reference and review `.github/workflows/actions.lock`. Every remote action must belong to GitHub or this project and use a full commit SHA. The pre-commit check verifies lockfile coverage offline; `just actions-verify` also checks remote provenance and needs GitHub authentication. GitHub currently reserves runner-level lockfile enforcement for Enterprise Cloud. This public repository uses explicit SHA pins and CLI verification.
+Run `just actions-lock` after changing an action reference and review `.github/workflows/actions.lock`. Every remote action must belong to GitHub or this project and use a full commit SHA. The pre-commit check verifies lockfile coverage offline; `just actions-verify` also checks remote provenance and needs GitHub authentication. GitHub also validates the committed lockfile when starting workflows. Enterprise policy controls for requiring lockfiles are separate from these checks.
 
-The generator can rewrite new workflow references to version tags. Restore those `uses:` references to the corresponding full commit SHA recorded in the generated lockfile, then run `just actions-verify`. Leave the machine-generated lockfile intact.
+The generation recipe uses `--no-narrow --relock` to retain SHA references and rebuild the dependency records with matching keys. Leave the machine-generated lockfile intact.
 
 ## Contracts to preserve
 
