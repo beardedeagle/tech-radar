@@ -3,7 +3,7 @@ module tech-radar
 go 1.26.4
 
 require (
-	github.com/Masterminds/semver/v3 v3.3.0
+	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/boyter/scc/v4 v4.1.0
 	github.com/cli/go-gh/v2 v2.16.2
 	github.com/gofrs/flock v0.13.1
