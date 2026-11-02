@@ -23,8 +23,8 @@ github.com/boyter/gocodewalker v1.5.2-0.20260905064325-27ad42ef7a81 h1:06aUfVQmm
 github.com/boyter/gocodewalker v1.5.2-0.20260905064325-27ad42ef7a81/go.mod h1:9k+yM6+fIx61F0xI9ChXEGE5DYoLhggw8AxSOtW+kKo=
 github.com/boyter/scc/v4 v4.1.0 h1:aNMEqwUk0cTH4stwWSbck8HOMKkRm7hjClw3VYvtYLw=
 github.com/boyter/scc/v4 v4.1.0/go.mod h1:Mf0ipNbkRP+Ykc/bptvvIgSK0F+HYIA7jsraWOiiwtM=
-github.com/cli/go-gh/v2 v2.16.2 h1:Qsb8GsS4QQWjupxcMutrj5tl2cJs6HubyDM0xQ4qsII=
-github.com/cli/go-gh/v2 v2.16.2/go.mod h1:OaJTFtHJapQq670h/3L0vqm4NwZGoJmSAVctWiY+3pQ=
+github.com/cli/go-gh/v2 v2.17.0 h1:F24s1Ow/6pgWO0FXXSTi7l4YLkcuS94XPv7npEGkrQc=
+github.com/cli/go-gh/v2 v2.17.0/go.mod h1:bc2VCe0OUSOuhDz5HeQrA7RAtc/d3PtyGogBXHbcp1o=
 github.com/cli/safeexec v1.0.1 h1:e/C79PbXF4yYTN/wauC4tviMxEV13BwljGj0N9j+N00=
 github.com/cli/safeexec v1.0.1/go.mod h1:Z/D4tTN8Vs5gXYHDCbaM1S/anmEDnJb1iW0+EJ5zx3Q=
 github.com/cli/shurcooL-graphql v0.0.4 h1:6MogPnQJLjKkaXPyGqPRXOI2qCsQdqNfUY1QSJu2GuY=
@@ -118,8 +118,8 @@ github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UV
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/stretchr/testify v1.12.1 h1:EuwCh5fleGS7H32xRwO3wRGT7DxrDhLAT6FF8MpWDWE=
 github.com/stretchr/testify v1.12.1/go.mod h1:MDEgiDPPsNp5cuIrHPPCyornHKgEVbtFUmoNlxoYthg=
-github.com/thlib/go-timezone-local v0.0.8 h1:wPh1JtBHBqAKmYjHD4j6GbQMGGbOOOnB6YRMQUTzYAY=
-github.com/thlib/go-timezone-local v0.0.8/go.mod h1:/Tnicc6m/lsJE0irFMA0LfIwTBo4QP7A8IfyIv4zZKI=
+github.com/thlib/go-timezone-local v0.0.9 h1:NJAmMmgFfjcyyx+M5EU4sSU35opbw4sVpk5n4Qk/bGk=
+github.com/thlib/go-timezone-local v0.0.9/go.mod h1:/Tnicc6m/lsJE0irFMA0LfIwTBo4QP7A8IfyIv4zZKI=
 github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=
 github.com/xanzy/ssh-agent v0.3.3/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI1Bc68Uw=
 go.yaml.in/yaml/v2 v2.4.4 h1:tuyd0P+2Ont/d6e2rl3be67goVK4R6deVxCUX5vyPaQ=

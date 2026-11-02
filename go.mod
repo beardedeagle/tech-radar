@@ -1,11 +1,11 @@
 module tech-radar
 
-go 1.26.4
+go 1.26.7
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.0
 	github.com/boyter/scc/v4 v4.1.0
-	github.com/cli/go-gh/v2 v2.16.2
+	github.com/cli/go-gh/v2 v2.17.0
 	github.com/gofrs/flock v0.13.1
 )
 
@@ -43,7 +43,7 @@ require (
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/skeema/knownhosts v1.3.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	github.com/thlib/go-timezone-local v0.0.8 // indirect
+	github.com/thlib/go-timezone-local v0.0.9 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
