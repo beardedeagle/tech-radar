@@ -33,10 +33,10 @@ tools: _actionlint _lefthook _goreleaser _hugo _actions-lock
 ci: check test build docs-build release-snapshot security
 
 # Run the native Go checks on each CI platform.
-ci-go: check-go test build
+ci-go: check-go check-versions test build
 
 # Run the pre-commit checks without modifying source files.
-check: check-go check-automation
+check: check-go check-versions check-automation
 
 check-go:
     mkdir -p output
@@ -44,6 +44,10 @@ check-go:
     test ! -s output/gofmt.txt
     go mod verify
     go vet ./...
+
+# Keep every declared plugin version aligned with the CLI source version.
+check-versions:
+    go test -count=1 ./cmd/tech-radar -run '^TestPluginVersionsMatchCLI$'
 
 check-automation: _actionlint _lefthook _goreleaser _actions-lock
     just --fmt --check
@@ -113,7 +117,7 @@ goreleaser *args: _goreleaser
     "{{ goreleaser_dir }}/goreleaser{{ exe }}" "$@"
 
 [private]
-_release-publish version: build _goreleaser
+_release-publish version: check-versions build _goreleaser
     #!/usr/bin/env bash
     set -euo pipefail
     version="${1#v}"
