@@ -51,7 +51,7 @@ check-go:
 check-versions:
     go test -count=1 ./cmd/tech-radar -run '^TestPluginVersionsMatchCLI$'
 
-check-automation: _actionlint _lefthook _goreleaser _actions-lock test-audit
+check-automation: _actionlint _lefthook _goreleaser _actions-lock test-audit test-release
     just --fmt --check
     "{{ actionlint_dir }}/actionlint{{ exe }}"
     just lefthook validate
@@ -103,6 +103,10 @@ audit: _osv-scanner
 test-audit:
     sh .github/scripts/audit-test.sh
 
+# Check publication guards and attestation failures without publishing.
+test-release:
+    bash .github/scripts/release-test.sh
+
 actions-verify: _actions-lock
     "{{ actions_lock_dir }}/gh-actions-lock{{ exe }}" --verify
 
@@ -127,55 +131,12 @@ goreleaser *args: _goreleaser
     "{{ goreleaser_dir }}/goreleaser{{ exe }}" "$@"
 
 [private]
-_release-publish version: check-versions build _goreleaser
-    #!/usr/bin/env bash
-    set -euo pipefail
-    version="${1#v}"
-    number='(0|[1-9][0-9]*)'
-    identifier='(0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)'
-    if [[ ! "$version" =~ ^${number}\.${number}\.${number}(-${identifier}(\.${identifier})*)?$ ]]; then
-        echo "Expected a version such as 0.2.0 or 0.2.0-rc.1." >&2
-        exit 1
-    fi
-    if [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_REF:-}" != refs/heads/main ]]; then
-        echo "Release must run from main." >&2
-        exit 1
-    fi
-    actual_version="$("./{{ binary }}" version | cut -d ' ' -f 2)"
-    if [[ "$version" != "$actual_version" ]]; then
-        echo "Requested version $version differs from source version $actual_version." >&2
-        exit 1
-    fi
-    if [[ -n "$(git status --porcelain --untracked-files=normal)" ]]; then
-        echo "Commit or preserve local changes before releasing." >&2
-        exit 1
-    fi
-    git fetch origin main --tags
-    if ! git merge-base --is-ancestor HEAD origin/main; then
-        echo "Release commit must be on origin/main." >&2
-        exit 1
-    fi
-    tag="v$version"
-    if git show-ref --verify --quiet "refs/tags/$tag"; then
-        echo "Tag $tag already exists; choose an unreleased version." >&2
-        exit 1
-    fi
-    commit="$(git rev-parse HEAD)"
-    git tag "$tag" "$commit"
-    trap 'git tag -d "$tag" >/dev/null' EXIT
-    just goreleaser release --clean --skip=publish
-    shopt -s nullglob
-    assets=(output/release/tech-radar_*.tar.gz output/release/tech-radar_*.zip output/release/*_checksums.txt)
-    if [[ "${#assets[@]}" -ne 7 ]]; then
-        echo "Expected six archives and one checksum file." >&2
-        exit 1
-    fi
-    flags=()
-    if [[ "$version" == *-* ]]; then
-        flags+=(--prerelease)
-    fi
-    gh release create "$tag" "${assets[@]}" --repo beardedeagle/tech-radar \
-        --target "$commit" --title "$tag" --notes-file output/release/CHANGELOG.md "${flags[@]}"
+_release-prepare version: check-versions build _goreleaser
+    bash .github/scripts/release.sh prepare "$1" "./{{ binary }}"
+
+[private]
+_release-publish version bundle: check-versions
+    bash .github/scripts/release.sh publish "$1" "./{{ binary }}" "$2"
 
 [private]
 _actionlint:

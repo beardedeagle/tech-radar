@@ -5,7 +5,7 @@ weight: 40
 
 # Releasing
 
-Choose the version yourself. The release workflow runs the shared checks, builds six archives, then creates the tag and GitHub release. It does not choose versions or open version-bump PRs.
+Choose the version yourself. The release workflow runs the shared checks, builds six archives, signs their provenance, then creates the tag and GitHub release. It does not choose versions or open version-bump PRs.
 
 ## Prepare a version
 
@@ -25,11 +25,26 @@ This dispatches the Release workflow on `main`. You can also choose **Run workfl
 
 ## What runs
 
-The workflow calls CI before publishing. All build and check commands come from the Justfile. Publication requires a clean commit on `origin/main`, a version matching the compiled CLI, and an unused tag. Only the publish job gets repository write permission.
+The workflow calls CI before publishing. All build and check commands come from the Justfile. Publication requires a clean commit on `origin/main`, a version matching the compiled CLI, and an unused tag. Only the publish job gets repository write permission and permission to sign and upload attestations.
 
 GoReleaser builds Linux, macOS, and Windows binaries for amd64 and arm64 without cgo. Archives include the license, README, and third-party notices. Windows uses ZIP; the other targets use tar.gz. A SHA-256 checksum file covers the archives. Cross-compilation checks that binaries build; native CI tests cover the three operating systems separately.
 
-The publishing recipe creates a temporary local tag to prepare the release, removes it on exit, and uses GitHub CLI to create the remote tag and release after packaging succeeds. GoReleaser itself has publishing disabled. If an upload fails after GitHub creates the release, inspect the release and its assets before deciding how to recover. Rerunning refuses an existing tag.
+The preparation recipe creates a temporary local tag for packaging and removes it on exit. GitHub's SHA-pinned `actions/attest` signs provenance for all six archives and the checksum manifest using the workflow's short-lived identity. No stored private signing key is needed. The publishing recipe rechecks the release guards and archive checksums, then verifies every file against that run's attestation bundle. Verification requires this repository's release workflow on `main`, the exact source and signer commit, and a GitHub-hosted runner. A failed signature or identity check stops publication.
+
+GitHub CLI creates the remote tag and release only after verification succeeds. GoReleaser itself has publishing disabled. If an upload fails after GitHub creates the release, inspect the release and its assets before deciding how to recover. Rerunning refuses an existing tag.
+
+## Verify a download
+
+For releases from 0.2.1 onward, verify each downloaded archive or checksum file with GitHub CLI:
+
+```sh
+gh attestation verify tech-radar_0.2.1_darwin_arm64.tar.gz \
+  --repo beardedeagle/tech-radar \
+  --cert-identity https://github.com/beardedeagle/tech-radar/.github/workflows/release.yml@refs/heads/main \
+  --source-ref refs/heads/main --deny-self-hosted-runners
+```
+
+GitHub stores the attestations separately from the release downloads. These attestations verify artifact provenance; they do not provide macOS notarization or Windows Authenticode signing. Release 0.2.0 has checksums only.
 
 ## Test packaging
 
