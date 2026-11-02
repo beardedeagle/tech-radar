@@ -11,6 +11,8 @@ Choose the version yourself. The release workflow runs the shared checks, builds
 
 Update `Version` in `internal/radar/model.go` through a reviewed PR. Update version examples when they change. This value also identifies report generators and saved contexts, so treat compatibility as part of that review. Release packaging does not replace it with linker flags.
 
+Keep the three plugin manifests under `plugin/tech-radar` and the plugin entry in `.claude-plugin/marketplace.json` on that same version. `just check-versions` checks them against the CLI source version. Local gates and CI run this check, and publishing checks again before creating a tag. Marketplace catalogs do not need a separate release version.
+
 Merge the PR into `main`, then start a release from the project root:
 
 ```sh

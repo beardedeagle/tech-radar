@@ -1,6 +1,6 @@
 {
   "name": "tech-radar",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Review repository technology evidence, propose a radar, and check explicit technology policy.",
   "author": {
     "name": "Tech Radar maintainers"
