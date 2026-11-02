@@ -76,9 +76,10 @@ jobs:
             output/tools/goreleaser-*
             output/tools/hugo-*
             output/tools/actions-lock-*
+            output/tools/osv-scanner-*
           key: automation-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Justfile', '.github/scripts/setup-just.sh') }}
       - name: Check automation, docs, and release packages
-        run: just check-automation docs-build release-snapshot
+        run: just tools check-automation docs-build release-snapshot
 
   security:
     name: Security
@@ -109,11 +110,14 @@ jobs:
             output/tools/goreleaser-*
             output/tools/hugo-*
             output/tools/actions-lock-*
+            output/tools/osv-scanner-*
           key: automation-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Justfile', '.github/scripts/setup-just.sh') }}
       - name: Verify action dependencies
         env:
           GH_TOKEN: ${{ github.token }}
         run: just actions-verify
+      - name: Audit dependency advisories
+        run: just audit
       - name: Analyze Go and workflows
         run: just codeql
       - name: Upload CodeQL results

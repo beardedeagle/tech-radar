@@ -44,6 +44,7 @@ jobs:
             output/tools/goreleaser-*
             output/tools/hugo-*
             output/tools/actions-lock-*
+            output/tools/osv-scanner-*
           key: automation-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Justfile', '.github/scripts/setup-just.sh') }}
       - name: Build handbook
         env:

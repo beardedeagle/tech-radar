@@ -9,6 +9,7 @@ goreleaser_version := "2.19.0"
 hugo_version := "0.169.0"
 actions_lock_revision := "113f91d77e0af03838b6ae3bef0e038cbab4c696"
 codeql_version := "2.27.3"
+osv_scanner_version := "2.7.0"
 exe := if os() == "windows" { ".exe" } else { "" }
 binary := "tech-radar" + exe
 tools_dir := justfile_directory() / "output" / "tools"
@@ -18,6 +19,7 @@ goreleaser_dir := tools_dir / ("goreleaser-" + goreleaser_version)
 hugo_dir := tools_dir / ("hugo-" + hugo_version)
 actions_lock_dir := tools_dir / ("actions-lock-" + actions_lock_revision)
 codeql_dir := tools_dir / ("codeql-" + codeql_version)
+osv_scanner_dir := tools_dir / ("osv-scanner-" + osv_scanner_version)
 
 default:
     @just --list
@@ -27,7 +29,7 @@ setup: tools
     just lefthook install
 
 # Keep development tools outside the application's Go module and PATH.
-tools: _actionlint _lefthook _goreleaser _hugo _actions-lock
+tools: _actionlint _lefthook _goreleaser _hugo _actions-lock _osv-scanner
 
 # Run every check used by CI on the current platform.
 ci: check test build docs-build release-snapshot security
@@ -49,7 +51,7 @@ check-go:
 check-versions:
     go test -count=1 ./cmd/tech-radar -run '^TestPluginVersionsMatchCLI$'
 
-check-automation: _actionlint _lefthook _goreleaser _actions-lock
+check-automation: _actionlint _lefthook _goreleaser _actions-lock test-audit
     just --fmt --check
     "{{ actionlint_dir }}/actionlint{{ exe }}"
     just lefthook validate
@@ -90,8 +92,16 @@ release version:
 actions-lock: _actions-lock
     "{{ actions_lock_dir }}/gh-actions-lock{{ exe }}" --no-narrow --relock
 
-# Verify remote action provenance and analyze Go and workflow code.
-security: actions-verify codeql
+# Verify dependencies and analyze Go and workflow code.
+security: actions-verify audit codeql
+
+# Check both Go modules against OSV and enforce dated advisory exceptions.
+audit: _osv-scanner
+    sh .github/scripts/audit.sh "{{ osv_scanner_dir }}/osv-scanner{{ exe }}"
+
+# Exercise scanner failures and exception policy without network access.
+test-audit:
+    sh .github/scripts/audit-test.sh
 
 actions-verify: _actions-lock
     "{{ actions_lock_dir }}/gh-actions-lock{{ exe }}" --verify
@@ -186,6 +196,10 @@ _hugo:
 [private]
 _actions-lock:
     @if [ ! -x "{{ actions_lock_dir }}/gh-actions-lock{{ exe }}" ]; then mkdir -p "{{ actions_lock_dir }}"; GOTOOLCHAIN={{ automation_go }} GOBIN="{{ actions_lock_dir }}" go install github.com/github/gh-actions-lock/cmd/gh-actions-lock@{{ actions_lock_revision }}; fi
+
+[private]
+_osv-scanner:
+    @if [ ! -x "{{ osv_scanner_dir }}/osv-scanner{{ exe }}" ]; then mkdir -p "{{ osv_scanner_dir }}"; GOTOOLCHAIN={{ automation_go }} GOBIN="{{ osv_scanner_dir }}" go install github.com/google/osv-scanner/v2/cmd/osv-scanner@v{{ osv_scanner_version }}; fi
 
 [private]
 _codeql:
