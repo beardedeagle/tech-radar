@@ -1,0 +1,13 @@
+min_version: 2.2.2
+lefthook: just lefthook
+assert_lefthook_installed: true
+
+pre-commit:
+  jobs:
+    - name: check
+      run: just check
+
+pre-push:
+  jobs:
+    - name: ci
+      run: just ci

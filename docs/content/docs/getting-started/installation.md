@@ -5,10 +5,10 @@ weight: 10
 
 # Build the CLI
 
-tech-radar requires Go 1.26.4 or later. Build it from the project root:
+tech-radar requires Go 1.26.4 or later and [just](https://just.systems/). Build it from the project root:
 
 ```sh
-go build -trimpath -o tech-radar ./cmd/tech-radar
+just build
 ./tech-radar version
 ```
 

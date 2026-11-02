@@ -11,29 +11,23 @@ The documentation module is separate from the CLI's root module. Theme dependenc
 
 ## Preview locally
 
-Use Hugo 0.169.0, the version used to verify this handbook. From the project root:
+From the project root:
 
 ```sh
-hugo server --source docs --bind 127.0.0.1
+just docs-serve
 ```
 
 Open `http://localhost:1313/`. Hugo rebuilds changed pages during preview.
 
-If Hugo is not installed, you can run the pinned builder with Go 1.27 or later:
-
-```sh
-go run github.com/gohugoio/hugo@v0.169.0 server --source docs --bind 127.0.0.1
-```
-
-The CLI itself still requires Go 1.26.4. The higher version above applies to building this Hugo release from source. Module resolution may need network access on the first documentation build.
+The recipe installs pinned Hugo 0.169.0 under `output/tools` using the automation Go toolchain. The CLI itself still requires Go 1.26.4. Toolchain and module downloads need network access on the first documentation build.
 
 ## Build static output
 
 ```sh
-hugo --source docs
+just docs-build
 ```
 
-The output is `output/handbook`. This uses the project's existing ignored output directory, which the scanner also excludes. For a site hosted under a subpath, supply its actual URL with `--baseURL` when building. Hugo uses that base URL for navigation, assets, and search links. Publishing the directory is a separate deployment step.
+The output is `output/handbook`. This uses the project's existing ignored output directory, which the scanner also excludes. The default URL is the published site. To build for another host or subpath, set `HUGO_BASEURL` when running the recipe. Hugo uses that URL for navigation, assets, and search links. Publishing the directory is a separate deployment step.
 
 ## Publish to GitHub Pages
 

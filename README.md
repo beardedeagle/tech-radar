@@ -8,10 +8,10 @@ Teams record their decisions in explicit policy files and update the report thro
 
 ## Build and run
 
-Requires Go **1.26.4 or later**. From the project root:
+Requires Go **1.26.4 or later** and [just](https://just.systems/). From the project root:
 
 ```sh
-go build -trimpath -o tech-radar ./cmd/tech-radar
+just build
 ./tech-radar generate --repo /path/to/repo --format html --out RADAR.html
 ```
 
@@ -44,14 +44,14 @@ The scanner reads supported manifests, matching direct locks, tool pins, languag
 
 ## Contribute and preview the docs
 
-Run `go test -race ./...` and `go vet ./...` for application changes. The [contributor guide](https://beardedeagle.github.io/tech-radar/docs/contributors/) explains architecture, compatibility, and checks.
+Run `just setup` once to install pinned tools and Lefthook gates. `just ci` runs the checks used by GitHub Actions, including race tests, documentation and release builds, action dependency verification, and CodeQL. The [contributor guide](https://beardedeagle.github.io/tech-radar/docs/contributors/) covers setup and checks. [Releasing](https://beardedeagle.github.io/tech-radar/docs/contributors/releases/) explains how to publish a manually chosen version.
 
-The handbook uses Hugo with Hugo Book in a separate documentation module. With Go 1.27 or later, run the pinned builder:
+The handbook uses Hugo with Hugo Book in a separate documentation module. Preview it with:
 
 ```sh
-go run github.com/gohugoio/hugo@v0.169.0 server --source docs --bind 127.0.0.1
+just docs-serve
 ```
 
-Open `http://localhost:1313/`. [Documentation development](https://beardedeagle.github.io/tech-radar/docs/contributors/documentation/) gives the pinned builder command, static build, and verification steps. Hugo is not required to run the CLI.
+Open `http://localhost:1313/`. [Documentation development](https://beardedeagle.github.io/tech-radar/docs/contributors/documentation/) covers static builds and verification. Hugo is not required to run the CLI.
 
 [Third-party notices](THIRD_PARTY_NOTICES.md) list the application's dependencies and attribution.
