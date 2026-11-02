@@ -44,6 +44,8 @@ The scanner reads supported manifests, matching direct locks, tool pins, languag
 
 ## Contribute and preview the docs
 
+See [contributing](.github/CONTRIBUTING.md) for PR guidelines and the [code of conduct](.github/CODE_OF_CONDUCT.md) for community expectations. Report vulnerabilities privately through the [security policy](SECURITY.md).
+
 Run `just setup` once to install pinned tools and Lefthook gates. `just ci` runs the checks used by GitHub Actions, including race tests, documentation and release builds, action dependency verification, and CodeQL. The [contributor guide](https://beardedeagle.github.io/tech-radar/docs/contributors/) covers setup and checks. [Releasing](https://beardedeagle.github.io/tech-radar/docs/contributors/releases/) explains how to publish a manually chosen version.
 
 The handbook uses Hugo with Hugo Book in a separate documentation module. Preview it with:

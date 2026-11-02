@@ -30,6 +30,8 @@ jobs:
     timeout-minutes: 25
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - name: Check out release commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -59,8 +61,20 @@ jobs:
             output/tools/actions-lock-*
             output/tools/osv-scanner-*
           key: automation-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Justfile', '.github/scripts/setup-just.sh') }}
-      - name: Build, tag, and publish
+      - name: Prepare release packages
+        id: prepare
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_VERSION: ${{ inputs.version }}
-        run: just _release-publish "$RELEASE_VERSION"
+        run: just _release-prepare "$RELEASE_VERSION"
+      - name: Attest release packages and checksums
+        id: attest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: ${{ steps.prepare.outputs.subjects }}
+      - name: Verify attestations and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          ATTESTATION_BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        run: just _release-publish "$RELEASE_VERSION" "$ATTESTATION_BUNDLE"

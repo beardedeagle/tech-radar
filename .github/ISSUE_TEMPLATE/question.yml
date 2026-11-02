@@ -1,0 +1,10 @@
+name: Question
+description: Ask a question that isn't a feature request or bug report.
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: Include what you've tried and a small example where useful. Remove private data.
+    validations:
+      required: true
