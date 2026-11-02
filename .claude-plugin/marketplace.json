@@ -7,7 +7,7 @@
     {
       "name": "tech-radar",
       "source": "./plugin/tech-radar",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "description": "Review repository technology evidence, propose a radar, and check explicit technology policy."
     }
   ],
