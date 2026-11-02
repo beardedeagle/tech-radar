@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "rules": {
+    "go:github.com/boyter/scc/v4": {
+      "name": "scc",
+      "quadrant": "Tools",
+      "ring": "Adopt",
+      "scope": "Repository language analysis",
+      "rationale": "Imported by internal/radar/languages.go and used to classify files and count source lines. Proposed placement based on current use; no approval is recorded.",
+      "status": "proposed"
+    },
+    "go:github.com/cli/go-gh/v2": {
+      "name": "go-gh",
+      "quadrant": "Tools",
+      "ring": "Adopt",
+      "scope": "Optional GitHub collection",
+      "rationale": "Imported by internal/discovery/transport.go to create the GitHub API client. Proposed placement based on current use; no approval is recorded.",
+      "status": "proposed"
+    },
+    "go:github.com/gofrs/flock": {
+      "name": "flock",
+      "quadrant": "Tools",
+      "ring": "Adopt",
+      "scope": "Generated output coordination",
+      "rationale": "Imported by cmd/tech-radar/output.go to coordinate cooperating writers. Proposed placement based on current use; no approval is recorded.",
+      "status": "proposed"
+    },
+    "go:github.com/Masterminds/semver/v3": {
+      "name": "Masterminds SemVer",
+      "quadrant": "Tools",
+      "ring": "Adopt",
+      "scope": "Policy version checks",
+      "rationale": "Imported by internal/radar/check_versions.go and check_policy.go for version comparisons and constraints. Proposed placement based on current use; no approval is recorded.",
+      "status": "proposed"
+    },
+    "go:github.com/alex-shpak/hugo-book": {
+      "name": "Hugo Book",
+      "quadrant": "Tools",
+      "ring": "Adopt",
+      "scope": "Documentation site",
+      "rationale": "Declared in docs/go.mod and configured as the Hugo theme in docs/hugo.toml. Proposed placement based on current use; no approval is recorded.",
+      "status": "proposed"
+    }
+  }
+}

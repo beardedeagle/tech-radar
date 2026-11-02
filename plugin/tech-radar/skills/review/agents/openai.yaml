@@ -1,0 +1,6 @@
+interface:
+  display_name: Tech Radar
+  short_description: Review technology evidence and check explicit policy
+  default_prompt: Use $review to investigate this repository's technology choices, propose evidence-backed grouping, and check supplied policy.
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,384 @@
+{
+  "kind": "tech-radar-context",
+  "schema_version": 1,
+  "generator_version": "0.2.0",
+  "catalog_version": "portfolio-2",
+  "snapshots": [
+    {
+      "id": "local:fixture",
+      "name": "fixture",
+      "origin": "local",
+      "archived": false,
+      "fork": false,
+      "status": "captured",
+      "inventory": {
+        "source": {
+          "fingerprint": "7e2cb038f9cb697e668d528df4406e6a49d4152e61c9d2f336c41232dfc98d89",
+          "files": 3,
+          "counter": "scc/v4 v4.1.0",
+          "corpus_version": "portfolio-2"
+        },
+        "findings": [
+          {
+            "id": "go",
+            "number": 0,
+            "name": "Go",
+            "quadrant": "Languages \u0026 Frameworks",
+            "evidence": [
+              {
+                "path": "a/go.mod",
+                "line": 1,
+                "kind": "declaration",
+                "detail": "Go module manifest"
+              }
+            ],
+            "evidence_count": 1,
+            "evidence_fingerprint": "d2094d81f4d7790df5475fbbe690c2b49490225d3d01ebae9a1c87be9255b6d2",
+            "presence": "detected",
+            "evidence_changed": false,
+            "review_required": true,
+            "decision": {}
+          },
+          {
+            "id": "python",
+            "number": 0,
+            "name": "Python",
+            "quadrant": "Languages \u0026 Frameworks",
+            "evidence": [
+              {
+                "path": "a/helper.py",
+                "line": 1,
+                "kind": "source reference",
+                "detail": "SCC language classification: Python"
+              }
+            ],
+            "evidence_count": 1,
+            "evidence_fingerprint": "a5ad5114b001a1e8447e4e6e2c4226f40fb9aab74ae09f383059d998ec826a4e",
+            "presence": "detected",
+            "evidence_changed": false,
+            "review_required": true,
+            "decision": {}
+          },
+          {
+            "id": "react",
+            "number": 0,
+            "name": "React",
+            "quadrant": "Languages \u0026 Frameworks",
+            "evidence": [
+              {
+                "path": "package.json",
+                "line": 1,
+                "kind": "declaration",
+                "detail": "npm package react: 19 [dependencies]"
+              }
+            ],
+            "evidence_count": 1,
+            "evidence_fingerprint": "922e1d6435c85e51d8adc9b1ae1945912dd4ffa5051464311f19a88eda925af2",
+            "presence": "detected",
+            "evidence_changed": false,
+            "review_required": true,
+            "decision": {}
+          }
+        ],
+        "warnings": [],
+        "languages": [
+          {
+            "language": "JSON",
+            "files": 1,
+            "lines": 1,
+            "code": 1,
+            "comments": 0,
+            "blank": 0
+          },
+          {
+            "language": "Python",
+            "files": 1,
+            "lines": 1,
+            "code": 1,
+            "comments": 0,
+            "blank": 0
+          }
+        ],
+        "components": [
+          {
+            "path": ".",
+            "ecosystem": "JavaScript/TypeScript",
+            "role": "UI application",
+            "profile": "react_typescript_web",
+            "reason": "Manifest/configuration signals select a candidate native checklist; deployment, implementation quality and ownership remain unverified."
+          },
+          {
+            "path": "a",
+            "ecosystem": "Go",
+            "role": "Go module; service role unverified",
+            "profile": "go_service",
+            "reason": "Manifest/configuration signals select a candidate native checklist; deployment, implementation quality and ownership remain unverified."
+          }
+        ],
+        "technologies": [
+          {
+            "id": "activerecord",
+            "name": "Active Record",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "apollo-graphql",
+            "name": "Apollo GraphQL",
+            "quadrant": "Languages \u0026 Frameworks",
+            "npm": [
+              "@apollo/server",
+              "apollo-server",
+              "apollo-server-lambda"
+            ]
+          },
+          {
+            "id": "argocd",
+            "name": "Argo CD",
+            "quadrant": "Tools"
+          },
+          {
+            "id": "celery",
+            "name": "Celery",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "commanded",
+            "name": "Commanded",
+            "quadrant": "Languages \u0026 Frameworks",
+            "hex": [
+              "commanded"
+            ]
+          },
+          {
+            "id": "delayed-job",
+            "name": "Delayed Job",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "dotnet",
+            "name": ".NET",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "eventstore",
+            "name": "EventStore",
+            "quadrant": "Languages \u0026 Frameworks",
+            "hex": [
+              "eventstore"
+            ]
+          },
+          {
+            "id": "fastapi",
+            "name": "FastAPI",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "jose",
+            "name": "jose",
+            "quadrant": "Languages \u0026 Frameworks",
+            "npm": [
+              "jose"
+            ]
+          },
+          {
+            "id": "jvm",
+            "name": "JVM",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "langgraph",
+            "name": "LangGraph",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "language:php",
+            "name": "PHP",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "language:rust",
+            "name": "Rust",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "laravel",
+            "name": "Laravel",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "model-sdk",
+            "name": "Model provider SDKs",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "plugin-artifact",
+            "name": "Plugin and skill artifacts",
+            "quadrant": "Tools"
+          },
+          {
+            "id": "pothos",
+            "name": "Pothos",
+            "quadrant": "Languages \u0026 Frameworks",
+            "npm": [
+              "@pothos/core"
+            ]
+          },
+          {
+            "id": "prisma",
+            "name": "Prisma",
+            "quadrant": "Languages \u0026 Frameworks",
+            "npm": [
+              "prisma",
+              "@prisma/client"
+            ]
+          },
+          {
+            "id": "pydantic",
+            "name": "Pydantic",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "rails",
+            "name": "Ruby on Rails",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "react-native",
+            "name": "React Native",
+            "quadrant": "Languages \u0026 Frameworks",
+            "npm": [
+              "react-native"
+            ]
+          },
+          {
+            "id": "redis",
+            "name": "Redis",
+            "quadrant": "Platforms",
+            "hex": [
+              "redix"
+            ],
+            "npm": [
+              "redis",
+              "ioredis"
+            ]
+          },
+          {
+            "id": "sidekiq",
+            "name": "Sidekiq",
+            "quadrant": "Languages \u0026 Frameworks"
+          }
+        ]
+      },
+      "files": [
+        {
+          "path": "a/go.mod",
+          "sha256": "cea9ae590576f079963dbc1cfc05513e343c1df53744d082f3dc1e9960f209be"
+        },
+        {
+          "path": "a/helper.py",
+          "sha256": "33bd629c348b5f698f70eb82f6bd857884464703171175f922980909cd63f584"
+        },
+        {
+          "path": "package.json",
+          "sha256": "1bad214a9436931175f1424524f9080a317679d80409f9b7e5d1c2561de09c64"
+        }
+      ]
+    }
+  ],
+  "technologies": [
+    {
+      "id": "go",
+      "name": "Go",
+      "quadrant": "Languages \u0026 Frameworks",
+      "significance": "system_defining",
+      "confidence": "declaration",
+      "repositories": [
+        "local:fixture"
+      ],
+      "profiles": [
+        "go_service",
+        "react_typescript_web"
+      ],
+      "evidence_count": 1
+    },
+    {
+      "id": "python",
+      "name": "Python",
+      "quadrant": "Languages \u0026 Frameworks",
+      "significance": "implementation_support",
+      "confidence": "reference",
+      "repositories": [
+        "local:fixture"
+      ],
+      "profiles": [
+        "go_service",
+        "react_typescript_web"
+      ],
+      "evidence_count": 1
+    },
+    {
+      "id": "react",
+      "name": "React",
+      "quadrant": "Languages \u0026 Frameworks",
+      "significance": "system_defining",
+      "confidence": "declaration",
+      "repositories": [
+        "local:fixture"
+      ],
+      "profiles": [
+        "react_typescript_web"
+      ],
+      "evidence_count": 1
+    }
+  ],
+  "profiles": [
+    {
+      "id": "go_service",
+      "name": "Go module/service",
+      "ecosystem": "Go",
+      "role": "Go module; service role unverified",
+      "concerns": [
+        "establish actual HTTP/RPC boundary",
+        "cancellation/timeouts",
+        "errors/concurrency",
+        "external-process ownership"
+      ],
+      "boundaries": [
+        "resource lifecycle",
+        "data handling",
+        "deployment compatibility"
+      ],
+      "repositories": [
+        "local:fixture"
+      ]
+    },
+    {
+      "id": "react_typescript_web",
+      "name": "React web",
+      "ecosystem": "JavaScript/TypeScript",
+      "role": "UI application",
+      "concerns": [
+        "routing/rendering",
+        "client/server split",
+        "state/data caching",
+        "form/schema validation"
+      ],
+      "boundaries": [
+        "identity/tenant data",
+        "browser credentials",
+        "API contracts"
+      ],
+      "repositories": [
+        "local:fixture"
+      ]
+    }
+  ],
+  "limitations": [
+    "Static bounded capture only; repository code, builds and hooks are never executed. Membership reflects accessible repositories at collection, not an atomic organization snapshot.",
+    "Dependency/generated trees, tests, credentials, symlinks, binary content and eligible files larger than 2 MiB are excluded; repository warnings record additional gaps.",
+    "Literal manifest readers do not evaluate dynamic syntax or resolve dependency includes. Unknown observations remain unclassified; absence is not proof of non-use.",
+    "Profiles are provisional native checklists, not implementation, deployment, ownership or approval proof. Repository prevalence never sets significance or radar rings.",
+    "Hashes bind frozen normalized observations for reproducible compilation; they do not attest source authenticity. Keep packs private when repository metadata is private."
+  ],
+  "fingerprint": "7a6257279bd59ff556f1b9198c8ec23e7e7205cf9f8790913a65647043728f8e"
+}

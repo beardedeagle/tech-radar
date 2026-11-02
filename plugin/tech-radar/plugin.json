@@ -1,0 +1,18 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "tech-radar",
+  "version": "0.1.0",
+  "description": "Review repository technology evidence, propose a radar, and check explicit technology policy.",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Tech Radar",
+        "shortDescription": "Review and check technologies",
+        "capabilities": []
+      }
+    }
+  },
+  "author": {
+    "name": "Tech Radar maintainers"
+  }
+}

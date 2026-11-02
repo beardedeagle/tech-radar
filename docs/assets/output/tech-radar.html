@@ -1,0 +1,1127 @@
+
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>tech-radar Technology Radar</title><script>
+(() => {
+  const root = document.documentElement;
+  const key = "tech-radar-theme";
+  const apply = (theme) => {
+    if (theme === "light" || theme === "dark") root.dataset.theme = theme;
+    else root.removeAttribute("data-theme");
+  };
+  try { apply(localStorage.getItem(key)); } catch (_) {}
+  document.addEventListener("DOMContentLoaded", () => {
+    const control = document.getElementById("theme-control");
+    const select = document.getElementById("theme");
+    select.value = root.dataset.theme || "system";
+    control.hidden = false;
+    select.addEventListener("change", () => {
+      apply(select.value);
+      try {
+        if (select.value === "system") localStorage.removeItem(key);
+        else localStorage.setItem(key, select.value);
+      } catch (_) {}
+    });
+  });
+})();
+</script><script>
+document.addEventListener("DOMContentLoaded", () => {
+  const tooltip = document.getElementById("radar-tooltip");
+  let active;
+  const hide = () => {
+    tooltip.hidden = true;
+    if (active) active.removeAttribute("aria-describedby");
+    active = null;
+  };
+  const position = (point) => {
+    const rect = point.getBoundingClientRect();
+    if (rect.bottom < 0 || rect.top > window.innerHeight || rect.right < 0 || rect.left > window.innerWidth) {
+      hide();
+      return;
+    }
+    const width = tooltip.offsetWidth;
+    const height = tooltip.offsetHeight;
+    const left = Math.max(8, Math.min(rect.left + rect.width / 2 - width / 2, window.innerWidth - width - 8));
+    const above = rect.top - height - 10;
+    const top = Math.max(8, Math.min(above >= 8 ? above : rect.bottom + 10, window.innerHeight - height - 8));
+    tooltip.style.left = left + "px";
+    tooltip.style.top = top + "px";
+  };
+  document.querySelectorAll(".chart .blip").forEach((point) => {
+    const title = point.querySelector("title");
+    if (title) title.remove();
+    const show = () => {
+      hide();
+      active = point;
+      tooltip.textContent = point.dataset.tooltip;
+      tooltip.hidden = false;
+      point.setAttribute("aria-describedby", "radar-tooltip");
+      position(point);
+    };
+    point.addEventListener("mouseenter", show);
+    point.addEventListener("focus", show);
+    point.addEventListener("mouseleave", () => { if (document.activeElement !== point) hide(); });
+    point.addEventListener("blur", hide);
+    point.addEventListener("click", hide);
+  });
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape") hide(); });
+  document.addEventListener("scroll", () => {
+    if (active && document.activeElement === active) position(active);
+    else hide();
+  }, true);
+  window.addEventListener("resize", hide);
+});
+</script><style>:root{
+color-scheme:light;--bg:#fff;--text:#182c37;--muted:#526572;--border:#c5d8d7;
+--notice-bg:#edf6f4;--accent:#00635e;--link:#205ba0;--focus:#087e9e;--warning:#894509;
+--radar-outer:#f5f7f8;--radar-assess:#edf2f3;--radar-trial:#e4eeed;--radar-adopt:#d2e7e4;--radar-border:#b8c9ce;
+--techniques:#00635e;--platforms:#2853a5;--tools:#965117;--languages:#7d4190;--control-bg:#f5f7f8;--point-outline:#fff;
+}
+[data-theme="dark"]{
+color-scheme:dark;--bg:#101820;--text:#dce6ee;--muted:#a9bccb;--border:#344a58;
+--notice-bg:#172f33;--accent:#63d6c5;--link:#8dc5ff;--focus:#77d8ff;--warning:#f4bd78;
+--radar-outer:#16212c;--radar-assess:#1c2a36;--radar-trial:#223641;--radar-adopt:#29464d;--radar-border:#56717e;
+--techniques:#64d7c9;--platforms:#92b9ff;--tools:#edb77d;--languages:#d8a4eb;--control-bg:#20313e;--point-outline:#c8d8e1;
+}
+@media screen and (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+color-scheme:dark;--bg:#101820;--text:#dce6ee;--muted:#a9bccb;--border:#344a58;
+--notice-bg:#172f33;--accent:#63d6c5;--link:#8dc5ff;--focus:#77d8ff;--warning:#f4bd78;
+--radar-outer:#16212c;--radar-assess:#1c2a36;--radar-trial:#223641;--radar-adopt:#29464d;--radar-border:#56717e;
+--techniques:#64d7c9;--platforms:#92b9ff;--tools:#edb77d;--languages:#d8a4eb;--control-bg:#20313e;--point-outline:#c8d8e1;
+}}
+.theme-control{display:flex;justify-content:flex-end;align-items:center;gap:10px;color:var(--muted);font-size:14px}
+.theme-control[hidden]{display:none}
+.theme-control select{font:inherit;padding:6px 10px;border:1px solid var(--border);border-radius:6px;color:var(--text);background:var(--control-bg)}
+.theme-control select:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+@media print{:root,[data-theme]{
+color-scheme:light;--bg:#fff;--text:#182c37;--muted:#526572;--border:#c5d8d7;
+--notice-bg:#edf6f4;--accent:#00635e;--link:#205ba0;--focus:#087e9e;--warning:#894509;
+--radar-outer:#f5f7f8;--radar-assess:#edf2f3;--radar-trial:#e4eeed;--radar-adopt:#d2e7e4;--radar-border:#b8c9ce;
+--techniques:#00635e;--platforms:#2853a5;--tools:#965117;--languages:#7d4190;--control-bg:#f5f7f8;--point-outline:#fff;
+}.theme-control{display:none}}
+
+.radar-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 24px;color:var(--muted);font-size:14px}
+.radar-legend span{display:flex;align-items:center;gap:8px}
+.radar-legend svg{width:28px;height:28px;color:var(--accent);flex:none}
+.chart .blip:focus-visible circle{stroke:var(--text);stroke-width:3}
+#radar-tooltip{position:fixed;z-index:20;max-width:min(360px,calc(100vw - 16px));padding:10px 14px;border:1px solid var(--radar-border);border-radius:6px;color:var(--text);background:var(--control-bg);font-size:14px;line-height:1.5;white-space:pre-line;overflow-wrap:anywhere;pointer-events:none;box-shadow:0 4px 16px #0004}
+@media print{#radar-tooltip{display:none}}
+
+*{box-sizing:border-box}body{margin:0;color:var(--text);font:16px/1.6 system-ui,sans-serif;background:var(--bg)}main{max-width:1160px;margin:auto;padding:24px 28px 40px}h1{font-size:clamp(30px,5vw,46px);line-height:1.15;letter-spacing:-1px}h2{margin-top:38px}h3{margin:0 0 14px;font-size:23px}.meta,.muted{color:var(--muted);font-size:14px}.notice{border-left:4px solid var(--accent);padding:14px 18px;background:var(--notice-bg)}a{color:var(--link);text-underline-offset:3px}a:focus-visible{outline:3px solid var(--focus);outline-offset:3px}.chart-scroll{overflow:auto}.chart{width:100%;min-width:650px;max-height:820px}.chart text{font-family:inherit}.chart .label{font-size:21px;font-weight:650}.chart .ring{font-size:15px;fill:var(--text)}.chart .point{font-size:15px;fill:white;font-weight:700;text-anchor:middle}.chart a:hover circle{stroke:var(--text);stroke-width:3}.register{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px}.entry{border-top:3px solid var(--border);padding-top:18px;scroll-margin-top:20px;overflow-wrap:anywhere}.entry p,.entry li{font-size:14px}.entry ul{padding-left:20px}.entry li{margin-bottom:8px}.decision{font-weight:650}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:9px;border-bottom:1px solid var(--border)}code{font-size:12px;overflow-wrap:anywhere}footer{border-top:1px solid var(--border);margin-top:38px;padding-top:20px;font-size:13px}.warning{color:var(--warning)}@media(max-width:700px){main{padding:22px 18px}.register{grid-template-columns:1fr}}@media print{main{max-width:none;padding:0}.chart{min-width:0;height:170mm}.entry{break-inside:avoid}.register{display:block}.entry{margin-bottom:24px}}
+</style></head><body><main>
+<div class="theme-control" id="theme-control" hidden><label for="theme">Theme</label><select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></div>
+<h1>tech-radar Technology Radar</h1>
+<p class="meta">tech-radar 0.2.0 · 7 entries · 41 eligible files · scc/v4 v4.1.0</p>
+<p class="notice">Review suggested placements with your team. Saved decisions take priority. 0 entries have no placement and are listed under “Needs review”.</p>
+
+<section aria-label="Technology radar"><div class="chart-scroll"><svg class="chart" viewBox="0 0 1000 1000" role="group" aria-labelledby="chart-title chart-description"><title id="chart-title">Technology recommendations by quadrant and ring</title><desc id="chart-description">Numbered links lead to register entries. Unplaced findings are listed in the register. Position within a ring has no ranking.</desc>
+<circle cx="500" cy="500" r="430" fill="var(--radar-outer)" stroke="var(--radar-border)"/><circle cx="500" cy="500" r="365" fill="var(--radar-assess)" stroke="var(--radar-border)"/><circle cx="500" cy="500" r="295" fill="var(--radar-trial)" stroke="var(--radar-border)"/><circle cx="500" cy="500" r="215" fill="var(--radar-adopt)" stroke="var(--radar-border)"/><path d="M500 65V935M65 500H935" stroke="var(--bg)" stroke-width="36"/>
+<text x="55" y="36" class="label" fill="var(--techniques)">Techniques</text><text x="690" y="36" class="label" fill="var(--platforms)">Platforms</text><text x="55" y="972" class="label" fill="var(--tools)">Tools</text><text x="590" y="972" class="label" fill="var(--languages)">Languages &amp; Frameworks</text>
+<g class="ring" text-anchor="middle"><text x="100" y="506">Caution</text><text x="170" y="506">Assess</text><text x="245" y="506">Trial</text><text x="385" y="506">Adopt</text><text x="615" y="506">Adopt</text><text x="755" y="506">Trial</text><text x="830" y="506">Assess</text><text x="900" y="506">Caution</text></g>
+<a href="#entry-2" class="blip" data-change="new" data-tooltip="Masterminds SemVer
+Tools / Adopt
+proposed; review required
+New to this radar" aria-label="2. Masterminds SemVer"><circle cx="332.25018628922413" cy="538" r="15" fill="#965117" stroke="var(--point-outline)" stroke-width="2"/><title>Masterminds SemVer
+Tools / Adopt
+proposed; review required
+New to this radar</title><text x="332.25018628922413" y="538" dy="5" class="point">2</text><circle cx="332.25018628922413" cy="538" r="18" fill="none" stroke="var(--tools)" stroke-width="2"/></a><a href="#entry-3" class="blip" data-change="new" data-tooltip="Hugo Book
+Tools / Adopt
+proposed; review required
+New to this radar" aria-label="3. Hugo Book"><circle cx="371.5009727663279" cy="538" r="15" fill="#965117" stroke="var(--point-outline)" stroke-width="2"/><title>Hugo Book
+Tools / Adopt
+proposed; review required
+New to this radar</title><text x="371.5009727663279" y="538" dy="5" class="point">3</text><circle cx="371.5009727663279" cy="538" r="18" fill="none" stroke="var(--tools)" stroke-width="2"/></a><a href="#entry-4" class="blip" data-change="new" data-tooltip="scc
+Tools / Adopt
+proposed; review required
+New to this radar" aria-label="4. scc"><circle cx="411.84105263786324" cy="538" r="15" fill="#965117" stroke="var(--point-outline)" stroke-width="2"/><title>scc
+Tools / Adopt
+proposed; review required
+New to this radar</title><text x="411.84105263786324" y="538" dy="5" class="point">4</text><circle cx="411.84105263786324" cy="538" r="18" fill="none" stroke="var(--tools)" stroke-width="2"/></a><a href="#entry-5" class="blip" data-change="new" data-tooltip="go-gh
+Tools / Adopt
+proposed; review required
+New to this radar" aria-label="5. go-gh"><circle cx="344.9603842849152" cy="574.4762885683682" r="15" fill="#965117" stroke="var(--point-outline)" stroke-width="2"/><title>go-gh
+Tools / Adopt
+proposed; review required
+New to this radar</title><text x="344.9603842849152" y="574.4762885683682" dy="5" class="point">5</text><circle cx="344.9603842849152" cy="574.4762885683682" r="18" fill="none" stroke="var(--tools)" stroke-width="2"/></a><a href="#entry-6" class="blip" data-change="new" data-tooltip="flock
+Tools / Adopt
+proposed; review required
+New to this radar" aria-label="6. flock"><circle cx="390.896802109719" cy="577.7977648143839" r="15" fill="#965117" stroke="var(--point-outline)" stroke-width="2"/><title>flock
+Tools / Adopt
+proposed; review required
+New to this radar</title><text x="390.896802109719" y="577.7977648143839" dy="5" class="point">6</text><circle cx="390.896802109719" cy="577.7977648143839" r="18" fill="none" stroke="var(--tools)" stroke-width="2"/></a><a href="#entry-7" class="blip" data-change="new" data-tooltip="Plugin and skill artifacts
+Tools / Trial
+suggested; review required
+New to this radar" aria-label="7. Plugin and skill artifacts"><circle cx="229.657624483323" cy="538" r="15" fill="#965117" stroke="var(--point-outline)" stroke-width="2"/><title>Plugin and skill artifacts
+Tools / Trial
+suggested; review required
+New to this radar</title><text x="229.657624483323" y="538" dy="5" class="point">7</text><circle cx="229.657624483323" cy="538" r="18" fill="none" stroke="var(--tools)" stroke-width="2"/></a><a href="#entry-1" class="blip" data-change="new" data-tooltip="Go
+Languages &amp; Frameworks / Adopt
+suggested; review required
+New to this radar" aria-label="1. Go"><circle cx="667.7498137107759" cy="538" r="15" fill="#7d4190" stroke="var(--point-outline)" stroke-width="2"/><title>Go
+Languages &amp; Frameworks / Adopt
+suggested; review required
+New to this radar</title><text x="667.7498137107759" y="538" dy="5" class="point">1</text><circle cx="667.7498137107759" cy="538" r="18" fill="none" stroke="var(--languages)" stroke-width="2"/></a>
+</svg></div>
+<div class="radar-legend" aria-label="Change symbols"><span><svg viewBox="-21 -21 42 42" aria-hidden="true"><circle r="12" fill="currentColor"/><circle r="18" fill="none" stroke="currentColor" stroke-width="2"/></svg>New entry</span><span><svg viewBox="-21 -21 42 42" aria-hidden="true"><circle r="12" fill="currentColor"/><path d="M-18 0 A18 18 0 0 1 18 0" fill="none" stroke="currentColor" stroke-width="2"/></svg>Moved in/out or changed quadrant</span><span><svg viewBox="-21 -21 42 42" aria-hidden="true"><circle r="12" fill="currentColor"/></svg>No change in placement</span></div>
+<p class="muted">The first report marks every entry as new to this radar. Later versions compare placements with the previous report. New does not mean recently adopted. Hover or focus a marker for details.</p>
+<p class="muted">Select a numbered point to inspect its evidence. The register contains all entries. Scroll sideways on narrow screens.</p></section><div id="radar-tooltip" role="tooltip" hidden></div>
+<p><strong>Adopt:</strong> use within its scope; suggested when source evidence shows established use. <strong>Trial:</strong> try in a limited scope. <strong>Assess:</strong> investigate. <strong>Caution:</strong> proceed carefully. A family's suggested placement reflects its strongest use evidence, not every member's maturity. Lifecycle is recorded separately.</p>
+<h2>Register</h2><div class="register"><section class="entry" id="entry-1"><h3>1. Go</h3><p class="decision">Languages &amp; Frameworks · Adopt<br>suggested; review required</p><p><code>go</code></p><p><strong>Scope:</strong> component in this repository</p><p><strong>Rationale:</strong> Source evidence shows established use. Confirm its scope and owner.</p><ul><li><code>docs/go.mod:1</code><br>declaration: Go module manifest</li><li><code>go.mod:1</code><br>declaration: Go module manifest</li><li><code>cmd/tech-radar/check.go:1</code><br>source reference: SCC language classification: Go</li><li><code>cmd/tech-radar/collection.go:1</code><br>source reference: SCC language classification: Go</li><li><code>cmd/tech-radar/discover.go:1</code><br>source reference: SCC language classification: Go</li><li><code>cmd/tech-radar/main.go:1</code><br>source reference: SCC language classification: Go</li><li><code>cmd/tech-radar/output.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/discovery/archive.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/discovery/discovery.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/discovery/transport.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/jsonutil/decode.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/catalog.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/chart.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/check.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/check_policy.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/check_result.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/check_versions.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/comparison.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/detection.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/document.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/grouping.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/languages.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/manifest_cargo.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/manifest_gradle.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/manifest_xml.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/model.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/policy.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/portfolio.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/portfolio_manifests.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/portfolio_paths.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/portfolio_profiles.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/references_go.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/render.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/scan.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/synthesis.go:1</code><br>source reference: SCC language classification: Go</li><li><code>internal/radar/theme.go:1</code><br>source reference: SCC language classification: Go</li></ul></section><section class="entry" id="entry-2"><h3>2. Masterminds SemVer</h3><p class="decision">Tools · Adopt<br>proposed; review required</p><p><code>go:github.com/Masterminds/semver/v3</code></p><p><strong>Scope:</strong> Policy version checks</p><p><strong>Rationale:</strong> Imported by internal/radar/check_versions.go and check_policy.go for version comparisons and constraints. Proposed placement based on current use; no approval is recorded.</p><ul><li><code>go.mod:6</code><br>declaration: go package github.com/Masterminds/semver/v3: v3.3.0</li></ul></section><section class="entry" id="entry-3"><h3>3. Hugo Book</h3><p class="decision">Tools · Adopt<br>proposed; review required</p><p><code>go:github.com/alex-shpak/hugo-book</code></p><p><strong>Scope:</strong> Documentation site</p><p><strong>Rationale:</strong> Declared in docs/go.mod and configured as the Hugo theme in docs/hugo.toml. Proposed placement based on current use; no approval is recorded.</p><ul><li><code>docs/go.mod:5</code><br>declaration: go package github.com/alex-shpak/hugo-book: v0.15.1-0.20261025203357-f221265b113c</li></ul></section><section class="entry" id="entry-4"><h3>4. scc</h3><p class="decision">Tools · Adopt<br>proposed; review required</p><p><code>go:github.com/boyter/scc/v4</code></p><p><strong>Scope:</strong> Repository language analysis</p><p><strong>Rationale:</strong> Imported by internal/radar/languages.go and used to classify files and count source lines. Proposed placement based on current use; no approval is recorded.</p><ul><li><code>go.mod:7</code><br>declaration: go package github.com/boyter/scc/v4: v4.1.0</li></ul></section><section class="entry" id="entry-5"><h3>5. go-gh</h3><p class="decision">Tools · Adopt<br>proposed; review required</p><p><code>go:github.com/cli/go-gh/v2</code></p><p><strong>Scope:</strong> Optional GitHub collection</p><p><strong>Rationale:</strong> Imported by internal/discovery/transport.go to create the GitHub API client. Proposed placement based on current use; no approval is recorded.</p><ul><li><code>go.mod:8</code><br>declaration: go package github.com/cli/go-gh/v2: v2.16.2</li></ul></section><section class="entry" id="entry-6"><h3>6. flock</h3><p class="decision">Tools · Adopt<br>proposed; review required</p><p><code>go:github.com/gofrs/flock</code></p><p><strong>Scope:</strong> Generated output coordination</p><p><strong>Rationale:</strong> Imported by cmd/tech-radar/output.go to coordinate cooperating writers. Proposed placement based on current use; no approval is recorded.</p><ul><li><code>go.mod:9</code><br>declaration: go package github.com/gofrs/flock: v0.13.1</li></ul></section><section class="entry" id="entry-7"><h3>7. Plugin and skill artifacts</h3><p class="decision">Tools · Trial<br>suggested; review required</p><p><code>plugin-artifact</code></p><p><strong>Scope:</strong> workflow in this repository</p><p><strong>Rationale:</strong> Try it in a limited scope and review the results with the team.</p><ul><li><code>plugin/tech-radar/.claude-plugin/plugin.json:1</code><br>configuration: Plugin manifest boundary; metadata omitted</li><li><code>plugin/tech-radar/plugin.json:1</code><br>configuration: Plugin manifest boundary; metadata omitted</li><li><code>plugin/tech-radar/skills/review/SKILL.md:1</code><br>configuration: Skill artifact boundary; content omitted</li></ul></section></div>
+<h2>Language statistics</h2><p class="muted">Counts cover the scanned files. Languages excluded from the radar still appear here.</p><div class="table-wrap"><table><thead><tr><th>Language</th><th>Files</th><th>Code</th><th>Comments</th><th>Blank</th><th>Lines</th></tr></thead><tbody><tr><td>Go</td><td>34</td><td>6573</td><td>209</td><td>315</td><td>7097</td></tr><tr><td>JSON</td><td>2</td><td>26</td><td>0</td><td>0</td><td>26</td></tr><tr><td>Markdown</td><td>1</td><td>46</td><td>0</td><td>26</td><td>72</td></tr><tr><td>TOML</td><td>1</td><td>14</td><td>0</td><td>2</td><td>16</td></tr><tr><td>gitignore</td><td>1</td><td>11</td><td>0</td><td>2</td><td>13</td></tr></tbody></table></div>
+<h2>Policy exclusions</h2><ul><li>No detected findings excluded by policy.</li></ul>
+<h2>Evidence and coverage</h2><p>Reads manifests, direct dependency locks, tool pins, language counts and selected source, configuration and documentation references. Unknown dependencies stay unclassified. Dynamic code and ambiguous references need review. Runtime behavior, deployed versions and vendor accounts aren&#39;t checked.</p><p>Skips dependency/build/generated directories, tests, credentials, symlinks, binary files and files over 2 MiB. Warnings list size and binary skips. Counts cover scanned files. Repo scripts, builds and hooks aren&#39;t run. Git HEAD is read when available.</p><p class="meta">On-disk source fingerprint: <code>1e40393b84d57a1acd6ee23f873e794a2a69bb4e6834a1efbf349d22f93c3a4d</code><br>Git HEAD at scan: <code></code></p>
+<footer>Edit policy and regenerate with --previous. This file includes the full saved report. Direct edits to the document stop reimport so they aren't discarded.<br>Method: <a href="https://www.thoughtworks.com/en-us/radar">Thoughtworks Technology Radar</a>, Volume 34.</footer>
+</main></body></html>
+
+<!-- tech-radar:snapshot
+{
+  "body_sha256": "1bd32d89126c7ee745e1ea8fc38cecd40ae8b3ac3f87d47314ac45b8eadb0311",
+  "report": {
+    "schema_version": 2,
+    "generator_version": "0.2.0",
+    "repository": "tech-radar",
+    "source": {
+      "fingerprint": "1e40393b84d57a1acd6ee23f873e794a2a69bb4e6834a1efbf349d22f93c3a4d",
+      "files": 41,
+      "counter": "scc/v4 v4.1.0",
+      "grouping_catalog": "9e94aedf12109f02c359af4e842ea5022bd147949f7b16855504603825c5b8f1"
+    },
+    "findings": [
+      {
+        "id": "go",
+        "number": 1,
+        "name": "Go",
+        "quadrant": "Languages \u0026 Frameworks",
+        "evidence": [
+          {
+            "path": "docs/go.mod",
+            "line": 1,
+            "kind": "declaration",
+            "detail": "Go module manifest"
+          },
+          {
+            "path": "go.mod",
+            "line": 1,
+            "kind": "declaration",
+            "detail": "Go module manifest"
+          },
+          {
+            "path": "cmd/tech-radar/check.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "cmd/tech-radar/collection.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "cmd/tech-radar/discover.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "cmd/tech-radar/main.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "cmd/tech-radar/output.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/discovery/archive.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/discovery/discovery.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/discovery/transport.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/jsonutil/decode.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/catalog.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/chart.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/check.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/check_policy.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/check_result.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/check_versions.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/comparison.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/detection.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/document.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/grouping.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/languages.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/manifest_cargo.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/manifest_gradle.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/manifest_xml.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/model.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/policy.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/portfolio.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/portfolio_manifests.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/portfolio_paths.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/portfolio_profiles.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/references_go.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/render.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/scan.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/synthesis.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          },
+          {
+            "path": "internal/radar/theme.go",
+            "line": 1,
+            "kind": "source reference",
+            "detail": "SCC language classification: Go"
+          }
+        ],
+        "evidence_count": 36,
+        "evidence_fingerprint": "d76c5f507c4d0f2aa6e451f6ba9961763166488b29eb3b4c818dc227e1535f56",
+        "presence": "detected",
+        "evidence_changed": false,
+        "review_required": true,
+        "decision": {},
+        "assessment": {
+          "significance": "system_defining",
+          "confidence": "declaration",
+          "role": "native execution/domain/data boundary",
+          "scope": "component",
+          "profiles": [
+            "go_service"
+          ],
+          "reason": "The locally applicable go_service profile identifies this role; portfolio frequency does not determine significance."
+        },
+        "proposal": {
+          "ring": "Adopt",
+          "scope": "component in this repository",
+          "rationale": "Source evidence shows this technology in use in this repository. Confirm its scope and ownership with the team. This is a suggested placement, not approval.",
+          "status": "proposed"
+        },
+        "placement_change": {
+          "kind": "new"
+        }
+      },
+      {
+        "id": "go:github.com/Masterminds/semver/v3",
+        "number": 2,
+        "name": "Masterminds SemVer",
+        "quadrant": "Tools",
+        "evidence": [
+          {
+            "path": "go.mod",
+            "line": 6,
+            "kind": "declaration",
+            "detail": "go package github.com/Masterminds/semver/v3: v3.3.0"
+          }
+        ],
+        "evidence_count": 1,
+        "evidence_fingerprint": "64ddd4b62284e8e77585e7c7679dd2d8e1cf2165d12db895f67f3a833d462aea",
+        "presence": "detected",
+        "evidence_changed": false,
+        "review_required": true,
+        "decision": {
+          "name": "Masterminds SemVer",
+          "quadrant": "Tools",
+          "ring": "Adopt",
+          "scope": "Policy version checks",
+          "rationale": "Imported by internal/radar/check_versions.go and check_policy.go for version comparisons and constraints. Proposed placement based on current use; no approval is recorded.",
+          "status": "proposed"
+        },
+        "assessment": {
+          "significance": "workflow_enabling",
+          "confidence": "declaration",
+          "role": "delivery/operation/development workflow",
+          "scope": "workflow",
+          "profiles": [
+            "go_service"
+          ],
+          "reason": "Enables a material delivery, operational, quality or observability workflow; assess its actual use and owner."
+        },
+        "proposal": {
+          "ring": "Assess",
+          "scope": "workflow in this repository",
+          "rationale": "Investigate this declared/referenced architectural choice and confirm its scope, ownership and current use before recommending commitment.",
+          "status": "proposed"
+        },
+        "placement_change": {
+          "kind": "new"
+        }
+      },
+      {
+        "id": "go:github.com/alex-shpak/hugo-book",
+        "number": 3,
+        "name": "Hugo Book",
+        "quadrant": "Tools",
+        "evidence": [
+          {
+            "path": "docs/go.mod",
+            "line": 5,
+            "kind": "declaration",
+            "detail": "go package github.com/alex-shpak/hugo-book: v0.15.1-0.20261025203357-f221265b113c"
+          }
+        ],
+        "evidence_count": 1,
+        "evidence_fingerprint": "9af36279d803f29e93c1ba0dabab0236121eb1e3bdcc21f77bc4461f332b8896",
+        "presence": "detected",
+        "evidence_changed": false,
+        "review_required": true,
+        "decision": {
+          "name": "Hugo Book",
+          "quadrant": "Tools",
+          "ring": "Adopt",
+          "scope": "Documentation site",
+          "rationale": "Declared in docs/go.mod and configured as the Hugo theme in docs/hugo.toml. Proposed placement based on current use; no approval is recorded.",
+          "status": "proposed"
+        },
+        "assessment": {
+          "significance": "workflow_enabling",
+          "confidence": "declaration",
+          "role": "delivery/operation/development workflow",
+          "scope": "workflow",
+          "profiles": [
+            "go_service"
+          ],
+          "reason": "Enables a material delivery, operational, quality or observability workflow; assess its actual use and owner."
+        },
+        "proposal": {
+          "ring": "Assess",
+          "scope": "workflow in this repository",
+          "rationale": "Investigate this declared/referenced architectural choice and confirm its scope, ownership and current use before recommending commitment.",
+          "status": "proposed"
+        },
+        "placement_change": {
+          "kind": "new"
+        }
+      },
+      {
+        "id": "go:github.com/boyter/scc/v4",
+        "number": 4,
+        "name": "scc",
+        "quadrant": "Tools",
+        "evidence": [
+          {
+            "path": "go.mod",
+            "line": 7,
+            "kind": "declaration",
+            "detail": "go package github.com/boyter/scc/v4: v4.1.0"
+          }
+        ],
+        "evidence_count": 1,
+        "evidence_fingerprint": "e17380efbafdd46076af54f34857afe718fb6ffbe2157df69377c5add7a7f245",
+        "presence": "detected",
+        "evidence_changed": false,
+        "review_required": true,
+        "decision": {
+          "name": "scc",
+          "quadrant": "Tools",
+          "ring": "Adopt",
+          "scope": "Repository language analysis",
+          "rationale": "Imported by internal/radar/languages.go and used to classify files and count source lines. Proposed placement based on current use; no approval is recorded.",
+          "status": "proposed"
+        },
+        "assessment": {
+          "significance": "workflow_enabling",
+          "confidence": "declaration",
+          "role": "delivery/operation/development workflow",
+          "scope": "workflow",
+          "profiles": [
+            "go_service"
+          ],
+          "reason": "Enables a material delivery, operational, quality or observability workflow; assess its actual use and owner."
+        },
+        "proposal": {
+          "ring": "Assess",
+          "scope": "workflow in this repository",
+          "rationale": "Investigate this declared/referenced architectural choice and confirm its scope, ownership and current use before recommending commitment.",
+          "status": "proposed"
+        },
+        "placement_change": {
+          "kind": "new"
+        }
+      },
+      {
+        "id": "go:github.com/cli/go-gh/v2",
+        "number": 5,
+        "name": "go-gh",
+        "quadrant": "Tools",
+        "evidence": [
+          {
+            "path": "go.mod",
+            "line": 8,
+            "kind": "declaration",
+            "detail": "go package github.com/cli/go-gh/v2: v2.16.2"
+          }
+        ],
+        "evidence_count": 1,
+        "evidence_fingerprint": "2fbb53816e0cc631f29fdfea33477ee8d6175720f94690c14ad8e0d2d19f3eae",
+        "presence": "detected",
+        "evidence_changed": false,
+        "review_required": true,
+        "decision": {
+          "name": "go-gh",
+          "quadrant": "Tools",
+          "ring": "Adopt",
+          "scope": "Optional GitHub collection",
+          "rationale": "Imported by internal/discovery/transport.go to create the GitHub API client. Proposed placement based on current use; no approval is recorded.",
+          "status": "proposed"
+        },
+        "assessment": {
+          "significance": "workflow_enabling",
+          "confidence": "declaration",
+          "role": "delivery/operation/development workflow",
+          "scope": "workflow",
+          "profiles": [
+            "go_service"
+          ],
+          "reason": "Enables a material delivery, operational, quality or observability workflow; assess its actual use and owner."
+        },
+        "proposal": {
+          "ring": "Assess",
+          "scope": "workflow in this repository",
+          "rationale": "Investigate this declared/referenced architectural choice and confirm its scope, ownership and current use before recommending commitment.",
+          "status": "proposed"
+        },
+        "placement_change": {
+          "kind": "new"
+        }
+      },
+      {
+        "id": "go:github.com/gofrs/flock",
+        "number": 6,
+        "name": "flock",
+        "quadrant": "Tools",
+        "evidence": [
+          {
+            "path": "go.mod",
+            "line": 9,
+            "kind": "declaration",
+            "detail": "go package github.com/gofrs/flock: v0.13.1"
+          }
+        ],
+        "evidence_count": 1,
+        "evidence_fingerprint": "0c1df39026677266ba52c64b56d34d3b4d19d606a9f24518f5b58e5372b2e651",
+        "presence": "detected",
+        "evidence_changed": false,
+        "review_required": true,
+        "decision": {
+          "name": "flock",
+          "quadrant": "Tools",
+          "ring": "Adopt",
+          "scope": "Generated output coordination",
+          "rationale": "Imported by cmd/tech-radar/output.go to coordinate cooperating writers. Proposed placement based on current use; no approval is recorded.",
+          "status": "proposed"
+        },
+        "assessment": {
+          "significance": "workflow_enabling",
+          "confidence": "declaration",
+          "role": "delivery/operation/development workflow",
+          "scope": "workflow",
+          "profiles": [
+            "go_service"
+          ],
+          "reason": "Enables a material delivery, operational, quality or observability workflow; assess its actual use and owner."
+        },
+        "proposal": {
+          "ring": "Assess",
+          "scope": "workflow in this repository",
+          "rationale": "Investigate this declared/referenced architectural choice and confirm its scope, ownership and current use before recommending commitment.",
+          "status": "proposed"
+        },
+        "placement_change": {
+          "kind": "new"
+        }
+      },
+      {
+        "id": "plugin-artifact",
+        "number": 7,
+        "name": "Plugin and skill artifacts",
+        "quadrant": "Tools",
+        "evidence": [
+          {
+            "path": "plugin/tech-radar/.claude-plugin/plugin.json",
+            "line": 1,
+            "kind": "configuration",
+            "detail": "Plugin manifest boundary; metadata omitted"
+          },
+          {
+            "path": "plugin/tech-radar/plugin.json",
+            "line": 1,
+            "kind": "configuration",
+            "detail": "Plugin manifest boundary; metadata omitted"
+          },
+          {
+            "path": "plugin/tech-radar/skills/review/SKILL.md",
+            "line": 1,
+            "kind": "configuration",
+            "detail": "Skill artifact boundary; content omitted"
+          }
+        ],
+        "evidence_count": 3,
+        "evidence_fingerprint": "c24497a681c736909a42d9b8e0f7e9dd52667abe80c06902e5ee506a4d1e5ec3",
+        "presence": "detected",
+        "evidence_changed": false,
+        "review_required": true,
+        "decision": {},
+        "assessment": {
+          "significance": "workflow_enabling",
+          "confidence": "configuration",
+          "role": "delivery/operation/development workflow",
+          "scope": "workflow",
+          "profiles": [
+            "plugin_artifact"
+          ],
+          "reason": "Enables a material delivery, operational, quality or observability workflow; assess its actual use and owner."
+        },
+        "proposal": {
+          "ring": "Trial",
+          "scope": "workflow in this repository",
+          "rationale": "Proposed bounded evaluation of this statically wired/configured boundary; validate behavior and operational fit with the team. Source wiring is not approval.",
+          "status": "proposed"
+        },
+        "placement_change": {
+          "kind": "new"
+        }
+      }
+    ],
+    "decisions": {
+      "go:github.com/Masterminds/semver/v3": {
+        "name": "Masterminds SemVer",
+        "quadrant": "Tools",
+        "ring": "Adopt",
+        "scope": "Policy version checks",
+        "rationale": "Imported by internal/radar/check_versions.go and check_policy.go for version comparisons and constraints. Proposed placement based on current use; no approval is recorded.",
+        "status": "proposed"
+      },
+      "go:github.com/alex-shpak/hugo-book": {
+        "name": "Hugo Book",
+        "quadrant": "Tools",
+        "ring": "Adopt",
+        "scope": "Documentation site",
+        "rationale": "Declared in docs/go.mod and configured as the Hugo theme in docs/hugo.toml. Proposed placement based on current use; no approval is recorded.",
+        "status": "proposed"
+      },
+      "go:github.com/boyter/scc/v4": {
+        "name": "scc",
+        "quadrant": "Tools",
+        "ring": "Adopt",
+        "scope": "Repository language analysis",
+        "rationale": "Imported by internal/radar/languages.go and used to classify files and count source lines. Proposed placement based on current use; no approval is recorded.",
+        "status": "proposed"
+      },
+      "go:github.com/cli/go-gh/v2": {
+        "name": "go-gh",
+        "quadrant": "Tools",
+        "ring": "Adopt",
+        "scope": "Optional GitHub collection",
+        "rationale": "Imported by internal/discovery/transport.go to create the GitHub API client. Proposed placement based on current use; no approval is recorded.",
+        "status": "proposed"
+      },
+      "go:github.com/gofrs/flock": {
+        "name": "flock",
+        "quadrant": "Tools",
+        "ring": "Adopt",
+        "scope": "Generated output coordination",
+        "rationale": "Imported by cmd/tech-radar/output.go to coordinate cooperating writers. Proposed placement based on current use; no approval is recorded.",
+        "status": "proposed"
+      }
+    },
+    "excluded": [],
+    "warnings": [],
+    "languages": [
+      {
+        "language": "Go",
+        "files": 34,
+        "lines": 7097,
+        "code": 6573,
+        "comments": 209,
+        "blank": 315
+      },
+      {
+        "language": "JSON",
+        "files": 2,
+        "lines": 26,
+        "code": 26,
+        "comments": 0,
+        "blank": 0
+      },
+      {
+        "language": "Markdown",
+        "files": 1,
+        "lines": 72,
+        "code": 46,
+        "comments": 0,
+        "blank": 26
+      },
+      {
+        "language": "TOML",
+        "files": 1,
+        "lines": 16,
+        "code": 14,
+        "comments": 0,
+        "blank": 2
+      },
+      {
+        "language": "gitignore",
+        "files": 1,
+        "lines": 13,
+        "code": 11,
+        "comments": 0,
+        "blank": 2
+      }
+    ],
+    "components": [
+      {
+        "path": ".",
+        "ecosystem": "Go",
+        "role": "Go module; service role unverified",
+        "profile": "go_service",
+        "reason": "Manifest/configuration signals select a candidate native checklist; deployment, implementation quality and ownership remain unverified."
+      },
+      {
+        "path": "docs",
+        "ecosystem": "Go",
+        "role": "Go module; service role unverified",
+        "profile": "go_service",
+        "reason": "Manifest/configuration signals select a candidate native checklist; deployment, implementation quality and ownership remain unverified."
+      },
+      {
+        "path": "plugin/tech-radar",
+        "ecosystem": "artifact",
+        "role": "plugin/tool contract",
+        "profile": "plugin_artifact",
+        "reason": "Manifest/configuration signals select a candidate native checklist; deployment, implementation quality and ownership remain unverified."
+      },
+      {
+        "path": "plugin/tech-radar/.claude-plugin",
+        "ecosystem": "artifact",
+        "role": "plugin/tool contract",
+        "profile": "plugin_artifact",
+        "reason": "Manifest/configuration signals select a candidate native checklist; deployment, implementation quality and ownership remain unverified."
+      },
+      {
+        "path": "plugin/tech-radar/skills/review",
+        "ecosystem": "artifact",
+        "role": "plugin/tool contract",
+        "profile": "plugin_artifact",
+        "reason": "Manifest/configuration signals select a candidate native checklist; deployment, implementation quality and ownership remain unverified."
+      }
+    ],
+    "rule_version": "context-4",
+    "highlights": [
+      {
+        "id": "go",
+        "number": 1,
+        "name": "Go",
+        "quadrant": "Languages \u0026 Frameworks",
+        "evidence": null,
+        "evidence_count": 36,
+        "evidence_fingerprint": "d76c5f507c4d0f2aa6e451f6ba9961763166488b29eb3b4c818dc227e1535f56",
+        "presence": "detected",
+        "evidence_changed": false,
+        "review_required": true,
+        "decision": {},
+        "assessment": {
+          "significance": "system_defining",
+          "confidence": "declaration",
+          "role": "native execution/domain/data boundary",
+          "scope": "component",
+          "profiles": [
+            "go_service"
+          ],
+          "reason": "The locally applicable go_service profile identifies this role; portfolio frequency does not determine significance."
+        },
+        "proposal": {
+          "ring": "Adopt",
+          "scope": "component in this repository",
+          "rationale": "Source evidence shows this technology in use in this repository. Confirm its scope and ownership with the team. This is a suggested placement, not approval.",
+          "status": "proposed"
+        },
+        "members": [
+          "go"
+        ],
+        "placement_change": {
+          "kind": "new"
+        }
+      },
+      {
+        "id": "go:github.com/Masterminds/semver/v3",
+        "number": 2,
+        "name": "Masterminds SemVer",
+        "quadrant": "Tools",
+        "evidence": null,
+        "evidence_count": 1,
+        "evidence_fingerprint": "64ddd4b62284e8e77585e7c7679dd2d8e1cf2165d12db895f67f3a833d462aea",
+        "presence": "detected",
+        "evidence_changed": false,
+        "review_required": true,
+        "decision": {
+          "name": "Masterminds SemVer",
+          "quadrant": "Tools",
+          "ring": "Adopt",
+          "scope": "Policy version checks",
+          "rationale": "Imported by internal/radar/check_versions.go and check_policy.go for version comparisons and constraints. Proposed placement based on current use; no approval is recorded.",
+          "status": "proposed"
+        },
+        "assessment": {
+          "significance": "workflow_enabling",
+          "confidence": "declaration",
+          "role": "delivery/operation/development workflow",
+          "scope": "workflow",
+          "profiles": [
+            "go_service"
+          ],
+          "reason": "Enables a material delivery, operational, quality or observability workflow; assess its actual use and owner."
+        },
+        "proposal": {
+          "ring": "Assess",
+          "scope": "workflow in this repository",
+          "rationale": "Investigate this declared/referenced architectural choice and confirm its scope, ownership and current use before recommending commitment.",
+          "status": "proposed"
+        },
+        "members": [
+          "go:github.com/Masterminds/semver/v3"
+        ],
+        "placement_change": {
+          "kind": "new"
+        }
+      },
+      {
+        "id": "go:github.com/alex-shpak/hugo-book",
+        "number": 3,
+        "name": "Hugo Book",
+        "quadrant": "Tools",
+        "evidence": null,
+        "evidence_count": 1,
+        "evidence_fingerprint": "9af36279d803f29e93c1ba0dabab0236121eb1e3bdcc21f77bc4461f332b8896",
+        "presence": "detected",
+        "evidence_changed": false,
+        "review_required": true,
+        "decision": {
+          "name": "Hugo Book",
+          "quadrant": "Tools",
+          "ring": "Adopt",
+          "scope": "Documentation site",
+          "rationale": "Declared in docs/go.mod and configured as the Hugo theme in docs/hugo.toml. Proposed placement based on current use; no approval is recorded.",
+          "status": "proposed"
+        },
+        "assessment": {
+          "significance": "workflow_enabling",
+          "confidence": "declaration",
+          "role": "delivery/operation/development workflow",
+          "scope": "workflow",
+          "profiles": [
+            "go_service"
+          ],
+          "reason": "Enables a material delivery, operational, quality or observability workflow; assess its actual use and owner."
+        },
+        "proposal": {
+          "ring": "Assess",
+          "scope": "workflow in this repository",
+          "rationale": "Investigate this declared/referenced architectural choice and confirm its scope, ownership and current use before recommending commitment.",
+          "status": "proposed"
+        },
+        "members": [
+          "go:github.com/alex-shpak/hugo-book"
+        ],
+        "placement_change": {
+          "kind": "new"
+        }
+      },
+      {
+        "id": "go:github.com/boyter/scc/v4",
+        "number": 4,
+        "name": "scc",
+        "quadrant": "Tools",
+        "evidence": null,
+        "evidence_count": 1,
+        "evidence_fingerprint": "e17380efbafdd46076af54f34857afe718fb6ffbe2157df69377c5add7a7f245",
+        "presence": "detected",
+        "evidence_changed": false,
+        "review_required": true,
+        "decision": {
+          "name": "scc",
+          "quadrant": "Tools",
+          "ring": "Adopt",
+          "scope": "Repository language analysis",
+          "rationale": "Imported by internal/radar/languages.go and used to classify files and count source lines. Proposed placement based on current use; no approval is recorded.",
+          "status": "proposed"
+        },
+        "assessment": {
+          "significance": "workflow_enabling",
+          "confidence": "declaration",
+          "role": "delivery/operation/development workflow",
+          "scope": "workflow",
+          "profiles": [
+            "go_service"
+          ],
+          "reason": "Enables a material delivery, operational, quality or observability workflow; assess its actual use and owner."
+        },
+        "proposal": {
+          "ring": "Assess",
+          "scope": "workflow in this repository",
+          "rationale": "Investigate this declared/referenced architectural choice and confirm its scope, ownership and current use before recommending commitment.",
+          "status": "proposed"
+        },
+        "members": [
+          "go:github.com/boyter/scc/v4"
+        ],
+        "placement_change": {
+          "kind": "new"
+        }
+      },
+      {
+        "id": "go:github.com/cli/go-gh/v2",
+        "number": 5,
+        "name": "go-gh",
+        "quadrant": "Tools",
+        "evidence": null,
+        "evidence_count": 1,
+        "evidence_fingerprint": "2fbb53816e0cc631f29fdfea33477ee8d6175720f94690c14ad8e0d2d19f3eae",
+        "presence": "detected",
+        "evidence_changed": false,
+        "review_required": true,
+        "decision": {
+          "name": "go-gh",
+          "quadrant": "Tools",
+          "ring": "Adopt",
+          "scope": "Optional GitHub collection",
+          "rationale": "Imported by internal/discovery/transport.go to create the GitHub API client. Proposed placement based on current use; no approval is recorded.",
+          "status": "proposed"
+        },
+        "assessment": {
+          "significance": "workflow_enabling",
+          "confidence": "declaration",
+          "role": "delivery/operation/development workflow",
+          "scope": "workflow",
+          "profiles": [
+            "go_service"
+          ],
+          "reason": "Enables a material delivery, operational, quality or observability workflow; assess its actual use and owner."
+        },
+        "proposal": {
+          "ring": "Assess",
+          "scope": "workflow in this repository",
+          "rationale": "Investigate this declared/referenced architectural choice and confirm its scope, ownership and current use before recommending commitment.",
+          "status": "proposed"
+        },
+        "members": [
+          "go:github.com/cli/go-gh/v2"
+        ],
+        "placement_change": {
+          "kind": "new"
+        }
+      },
+      {
+        "id": "go:github.com/gofrs/flock",
+        "number": 6,
+        "name": "flock",
+        "quadrant": "Tools",
+        "evidence": null,
+        "evidence_count": 1,
+        "evidence_fingerprint": "0c1df39026677266ba52c64b56d34d3b4d19d606a9f24518f5b58e5372b2e651",
+        "presence": "detected",
+        "evidence_changed": false,
+        "review_required": true,
+        "decision": {
+          "name": "flock",
+          "quadrant": "Tools",
+          "ring": "Adopt",
+          "scope": "Generated output coordination",
+          "rationale": "Imported by cmd/tech-radar/output.go to coordinate cooperating writers. Proposed placement based on current use; no approval is recorded.",
+          "status": "proposed"
+        },
+        "assessment": {
+          "significance": "workflow_enabling",
+          "confidence": "declaration",
+          "role": "delivery/operation/development workflow",
+          "scope": "workflow",
+          "profiles": [
+            "go_service"
+          ],
+          "reason": "Enables a material delivery, operational, quality or observability workflow; assess its actual use and owner."
+        },
+        "proposal": {
+          "ring": "Assess",
+          "scope": "workflow in this repository",
+          "rationale": "Investigate this declared/referenced architectural choice and confirm its scope, ownership and current use before recommending commitment.",
+          "status": "proposed"
+        },
+        "members": [
+          "go:github.com/gofrs/flock"
+        ],
+        "placement_change": {
+          "kind": "new"
+        }
+      },
+      {
+        "id": "plugin-artifact",
+        "number": 7,
+        "name": "Plugin and skill artifacts",
+        "quadrant": "Tools",
+        "evidence": null,
+        "evidence_count": 3,
+        "evidence_fingerprint": "c24497a681c736909a42d9b8e0f7e9dd52667abe80c06902e5ee506a4d1e5ec3",
+        "presence": "detected",
+        "evidence_changed": false,
+        "review_required": true,
+        "decision": {},
+        "assessment": {
+          "significance": "workflow_enabling",
+          "confidence": "configuration",
+          "role": "delivery/operation/development workflow",
+          "scope": "workflow",
+          "profiles": [
+            "plugin_artifact"
+          ],
+          "reason": "Enables a material delivery, operational, quality or observability workflow; assess its actual use and owner."
+        },
+        "proposal": {
+          "ring": "Trial",
+          "scope": "workflow in this repository",
+          "rationale": "Proposed bounded evaluation of this statically wired/configured boundary; validate behavior and operational fit with the team. Source wiring is not approval.",
+          "status": "proposed"
+        },
+        "members": [
+          "plugin-artifact"
+        ],
+        "placement_change": {
+          "kind": "new"
+        }
+      }
+    ]
+  }
+}
+tech-radar:snapshot -->

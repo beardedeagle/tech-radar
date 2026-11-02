@@ -31,3 +31,15 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# User specific files
+/tech-radar
+/output/
+/.backup/
+/.codegraph/
+/.tgrep/
+/.zvec-grep/
+/.mimosa/
+/.zcode/
+.DS_Store
+/docs/.hugo_build.lock

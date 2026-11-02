@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "repository": "Example application",
+  "rules": {
+    "phoenix": {
+      "ring": "Adopt",
+      "scope": "Example application's existing web surfaces",
+      "rationale": "Example only. Replace this with your team's reason for using Phoenix.",
+      "status": "proposed"
+    },
+    "k6": {
+      "ring": "Assess",
+      "scope": "Evaluate performance testing for this application",
+      "rationale": "Evaluate in a test environment before deciding whether to use it.",
+      "status": "proposed"
+    }
+  }
+}

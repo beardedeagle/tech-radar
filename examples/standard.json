@@ -1,0 +1,29 @@
+{
+  "kind": "tech-radar-policy",
+  "schema_version": 1,
+  "id": "example-standard",
+  "version": "1",
+  "default": "deny",
+  "approval": {
+    "status": "proposed",
+    "owner": "",
+    "reference": "",
+    "reviewed": ""
+  },
+  "rules": [
+    {
+      "id": "react-ui",
+      "technologies": ["react"],
+      "effect": "allow",
+      "paths": ["web"],
+      "versions": ">=19.0.0 <20.0.0",
+      "reason": "Example only; replace with the team's reviewed decision"
+    },
+    {
+      "id": "legacy-framework",
+      "technologies": ["npm:example-legacy-framework"],
+      "effect": "existing-only",
+      "reason": "Maintain existing use; new observation locations need review"
+    }
+  ]
+}

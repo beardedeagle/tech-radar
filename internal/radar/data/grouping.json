@@ -1,0 +1,420 @@
+{
+  "schema_version": 1,
+  "catalog_version": "families-1",
+  "families": [
+    {
+      "id": "aws",
+      "name": "Amazon Web Services",
+      "quadrant": "Platforms",
+      "significance": "system_defining",
+      "relationship": "platform_services",
+      "scope": "repository",
+      "members": [
+        "amazon-ecs",
+        "amazon-eks",
+        "amazon-s3",
+        "amazon-sqs",
+        "aws-kms",
+        "aws-secrets",
+        "aws-copilot",
+        "hex:ex_aws",
+        "pypi:boto3",
+        "pypi:botocore"
+      ],
+      "prefixes": [
+        "hex:ex_aws_",
+        "hex:aws_rds_",
+        "npm:@aws-sdk/",
+        "go:github.com/aws/aws-sdk-go-v2/",
+        "gem:aws-sdk-",
+        "maven:software.amazon.awssdk:",
+        "nuget:awssdk."
+      ]
+    },
+    {
+      "id": "ash",
+      "name": "Ash Framework",
+      "quadrant": "Languages & Frameworks",
+      "significance": "system_defining",
+      "relationship": "framework_extensions",
+      "scope": "component",
+      "members": [
+        "ash",
+        "ash-authentication",
+        "ash-ai",
+        "ash-first"
+      ],
+      "prefixes": [
+        "hex:ash_"
+      ]
+    },
+    {
+      "id": "beam",
+      "name": "Elixir / Erlang / OTP",
+      "quadrant": "Languages & Frameworks",
+      "significance": "system_defining",
+      "relationship": "runtime_companions",
+      "scope": "repository",
+      "members": [
+        "elixir",
+        "erlang-otp",
+        "otp-supervision"
+      ]
+    },
+    {
+      "id": "phoenix",
+      "name": "Phoenix",
+      "quadrant": "Languages & Frameworks",
+      "significance": "system_defining",
+      "relationship": "framework_extensions",
+      "scope": "component",
+      "members": [
+        "phoenix",
+        "phoenix-liveview",
+        "bandit",
+        "language:heex",
+        "language:elixir-template"
+      ],
+      "prefixes": [
+        "hex:phoenix_"
+      ]
+    },
+    {
+      "id": "postgresql-ecto",
+      "name": "PostgreSQL / Ecto",
+      "quadrant": "Platforms",
+      "significance": "system_defining",
+      "relationship": "framework_extensions",
+      "scope": "component",
+      "members": [
+        "postgresql",
+        "ecto"
+      ],
+      "prefixes": [
+        "hex:ecto_"
+      ]
+    },
+    {
+      "id": "kubernetes",
+      "name": "Kubernetes / Helm",
+      "quadrant": "Platforms",
+      "significance": "system_defining",
+      "relationship": "platform_services",
+      "scope": "repository",
+      "members": [
+        "kubernetes",
+        "helm"
+      ]
+    },
+    {
+      "id": "observability",
+      "name": "Observability",
+      "quadrant": "Tools",
+      "significance": "workflow_enabling",
+      "relationship": "workflow_tools",
+      "scope": "repository",
+      "members": [
+        "opentelemetry",
+        "honeycomb",
+        "sentry",
+        "traced-http"
+      ],
+      "prefixes": [
+        "hex:opentelemetry_",
+        "hex:telemetry_",
+        "npm:@opentelemetry/",
+        "pypi:opentelemetry-",
+        "go:go.opentelemetry.io/otel/",
+        "maven:io.opentelemetry:"
+      ]
+    },
+    {
+      "id": "feature-flags",
+      "name": "Feature flags",
+      "quadrant": "Techniques",
+      "significance": "workflow_enabling",
+      "relationship": "framework_extensions",
+      "scope": "component",
+      "members": [
+        "feature-flags",
+        "fun-with-flags"
+      ]
+    },
+    {
+      "id": "quality",
+      "name": "Code quality and testing",
+      "quadrant": "Tools",
+      "significance": "workflow_enabling",
+      "relationship": "workflow_tools",
+      "scope": "repository",
+      "members": [
+        "credo",
+        "dialyzer",
+        "sobelow",
+        "mix-audit",
+        "excoveralls",
+        "mox",
+        "eslint",
+        "playwright",
+        "k6",
+        "pypi:pytest",
+        "pypi:ruff",
+        "pypi:mypy",
+        "gem:rubocop",
+        "gem:rspec"
+      ],
+      "prefixes": [
+        "pypi:pytest-",
+        "gem:rspec-",
+        "npm:@eslint/"
+      ]
+    },
+    {
+      "id": "tailwind",
+      "name": "Tailwind CSS",
+      "quadrant": "Languages & Frameworks",
+      "significance": "system_defining",
+      "relationship": "framework_extensions",
+      "scope": "component",
+      "members": [
+        "tailwind",
+        "daisyui"
+      ]
+    },
+    {
+      "id": "react",
+      "name": "React",
+      "quadrant": "Languages & Frameworks",
+      "significance": "system_defining",
+      "relationship": "framework_extensions",
+      "scope": "component",
+      "members": [
+        "react"
+      ],
+      "prefixes": [
+        "npm:@radix-ui/"
+      ]
+    },
+    {
+      "id": "django",
+      "name": "Django",
+      "quadrant": "Languages & Frameworks",
+      "significance": "system_defining",
+      "relationship": "framework_extensions",
+      "scope": "component",
+      "members": [
+        "pypi:django",
+        "pypi:djangorestframework"
+      ],
+      "prefixes": [
+        "pypi:django-"
+      ]
+    },
+    {
+      "id": "rails",
+      "name": "Ruby on Rails",
+      "quadrant": "Languages & Frameworks",
+      "significance": "system_defining",
+      "relationship": "framework_extensions",
+      "scope": "component",
+      "members": [
+        "rails",
+        "activerecord",
+        "gem:actionpack",
+        "gem:actionview",
+        "gem:actionmailer",
+        "gem:activejob",
+        "gem:activesupport",
+        "gem:railties"
+      ]
+    },
+    {
+      "id": "laravel",
+      "name": "Laravel",
+      "quadrant": "Languages & Frameworks",
+      "significance": "system_defining",
+      "relationship": "framework_extensions",
+      "scope": "component",
+      "members": [
+        "laravel"
+      ],
+      "prefixes": [
+        "composer:illuminate/",
+        "composer:laravel/"
+      ]
+    },
+    {
+      "id": "vue",
+      "name": "Vue",
+      "quadrant": "Languages & Frameworks",
+      "significance": "system_defining",
+      "relationship": "framework_extensions",
+      "scope": "component",
+      "members": [
+        "npm:vue",
+        "npm:vue-router",
+        "npm:pinia"
+      ],
+      "prefixes": [
+        "npm:@vue/"
+      ]
+    },
+    {
+      "id": "angular",
+      "name": "Angular",
+      "quadrant": "Languages & Frameworks",
+      "significance": "system_defining",
+      "relationship": "framework_extensions",
+      "scope": "component",
+      "prefixes": [
+        "npm:@angular/"
+      ]
+    },
+    {
+      "id": "express",
+      "name": "Express",
+      "quadrant": "Languages & Frameworks",
+      "significance": "system_defining",
+      "relationship": "framework_extensions",
+      "scope": "component",
+      "members": [
+        "npm:express",
+        "npm:@types/express"
+      ]
+    },
+    {
+      "id": "vite",
+      "name": "Vite",
+      "quadrant": "Tools",
+      "significance": "workflow_enabling",
+      "relationship": "workflow_tools",
+      "scope": "component",
+      "members": [
+        "npm:vite"
+      ],
+      "prefixes": [
+        "npm:@vitejs/plugin-"
+      ]
+    },
+    {
+      "id": "fastapi",
+      "name": "FastAPI",
+      "quadrant": "Languages & Frameworks",
+      "significance": "system_defining",
+      "relationship": "framework_extensions",
+      "scope": "component",
+      "members": [
+        "fastapi",
+        "pydantic",
+        "pypi:pydantic-core"
+      ]
+    },
+    {
+      "id": "spring",
+      "name": "Spring",
+      "quadrant": "Languages & Frameworks",
+      "significance": "system_defining",
+      "relationship": "framework_extensions",
+      "scope": "component",
+      "prefixes": [
+        "maven:org.springframework:",
+        "maven:org.springframework.boot:",
+        "maven:org.springframework.security:",
+        "maven:org.springframework.data:"
+      ]
+    },
+    {
+      "id": "aspnet-core",
+      "name": "ASP.NET Core",
+      "quadrant": "Languages & Frameworks",
+      "significance": "system_defining",
+      "relationship": "framework_extensions",
+      "scope": "component",
+      "prefixes": [
+        "nuget:microsoft.aspnetcore."
+      ],
+      "members": [
+        "dotnet:microsoft.aspnetcore.app"
+      ]
+    },
+    {
+      "id": "ef-core",
+      "name": "Entity Framework Core",
+      "quadrant": "Languages & Frameworks",
+      "significance": "system_defining",
+      "relationship": "framework_extensions",
+      "scope": "component",
+      "members": [
+        "nuget:microsoft.entityframeworkcore"
+      ],
+      "prefixes": [
+        "nuget:microsoft.entityframeworkcore."
+      ]
+    },
+    {
+      "id": "rust-async",
+      "name": "Tokio",
+      "quadrant": "Languages & Frameworks",
+      "significance": "system_defining",
+      "relationship": "runtime_companions",
+      "scope": "component",
+      "members": [
+        "cargo:tokio",
+        "cargo:tokio-util",
+        "cargo:tokio-stream"
+      ]
+    },
+    {
+      "id": "axum",
+      "name": "Axum",
+      "quadrant": "Languages & Frameworks",
+      "significance": "system_defining",
+      "relationship": "framework_extensions",
+      "scope": "component",
+      "members": [
+        "cargo:axum",
+        "cargo:axum-core",
+        "cargo:axum-extra"
+      ]
+    },
+    {
+      "id": "gin",
+      "name": "Gin",
+      "quadrant": "Languages & Frameworks",
+      "significance": "system_defining",
+      "relationship": "framework_extensions",
+      "scope": "component",
+      "members": [
+        "go:github.com/gin-gonic/gin"
+      ]
+    },
+    {
+      "id": "azure",
+      "name": "Microsoft Azure",
+      "quadrant": "Platforms",
+      "significance": "system_defining",
+      "relationship": "platform_services",
+      "scope": "repository",
+      "prefixes": [
+        "npm:@azure/",
+        "pypi:azure-",
+        "go:github.com/Azure/azure-sdk-for-go/sdk/",
+        "nuget:azure."
+      ]
+    },
+    {
+      "id": "google-cloud",
+      "name": "Google Cloud",
+      "quadrant": "Platforms",
+      "significance": "system_defining",
+      "relationship": "platform_services",
+      "scope": "repository",
+      "prefixes": [
+        "npm:@google-cloud/",
+        "pypi:google-cloud-",
+        "go:cloud.google.com/go/",
+        "maven:com.google.cloud:"
+      ]
+    }
+  ]
+}

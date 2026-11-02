@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "families": [
+    {
+      "id": "example-framework",
+      "name": "Example framework",
+      "quadrant": "Languages & Frameworks",
+      "significance": "system_defining",
+      "relationship": "framework_extensions",
+      "scope": "component",
+      "members": ["npm:example-core", "npm:example-router"],
+      "prefixes": ["npm:@example-framework/"]
+    }
+  ]
+}

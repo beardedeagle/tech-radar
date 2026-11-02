@@ -1,0 +1,628 @@
+{
+  "schema_version": 2,
+  "generator_version": "0.2.0",
+  "repository": "Repository",
+  "source": {
+    "fingerprint": "1e40393b84d57a1acd6ee23f873e794a2a69bb4e6834a1efbf349d22f93c3a4d",
+    "files": 41,
+    "counter": "scc/v4 v4.1.0",
+    "grouping_catalog": "9e94aedf12109f02c359af4e842ea5022bd147949f7b16855504603825c5b8f1"
+  },
+  "findings": [
+    {
+      "id": "go",
+      "number": 1,
+      "name": "Go",
+      "quadrant": "Languages \u0026 Frameworks",
+      "evidence": [
+        {
+          "path": "docs/go.mod",
+          "line": 1,
+          "kind": "declaration",
+          "detail": "Go module manifest"
+        },
+        {
+          "path": "go.mod",
+          "line": 1,
+          "kind": "declaration",
+          "detail": "Go module manifest"
+        },
+        {
+          "path": "cmd/tech-radar/check.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "cmd/tech-radar/collection.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "cmd/tech-radar/discover.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "cmd/tech-radar/main.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "cmd/tech-radar/output.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/discovery/archive.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/discovery/discovery.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/discovery/transport.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/jsonutil/decode.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/catalog.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/chart.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/check.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/check_policy.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/check_result.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/check_versions.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/comparison.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/detection.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/document.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/grouping.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/languages.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/manifest_cargo.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/manifest_gradle.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/manifest_xml.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/model.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/policy.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/portfolio.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/portfolio_manifests.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/portfolio_paths.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/portfolio_profiles.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/references_go.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/render.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/scan.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/synthesis.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        },
+        {
+          "path": "internal/radar/theme.go",
+          "line": 1,
+          "kind": "source reference",
+          "detail": "SCC language classification: Go"
+        }
+      ],
+      "evidence_count": 36,
+      "evidence_fingerprint": "d76c5f507c4d0f2aa6e451f6ba9961763166488b29eb3b4c818dc227e1535f56",
+      "presence": "detected",
+      "evidence_changed": false,
+      "review_required": true,
+      "decision": {},
+      "assessment": {
+        "significance": "system_defining",
+        "confidence": "declaration",
+        "role": "native execution/domain/data boundary",
+        "scope": "component",
+        "profiles": [
+          "go_service"
+        ],
+        "reason": "The locally applicable go_service profile identifies this role; portfolio frequency does not determine significance."
+      },
+      "proposal": {
+        "ring": "Adopt",
+        "scope": "component in this repository",
+        "rationale": "Source evidence shows this technology in use in this repository. Confirm its scope and ownership with the team. This is a suggested placement, not approval.",
+        "status": "proposed"
+      },
+      "placement_change": {
+        "kind": "new"
+      }
+    },
+    {
+      "id": "go:github.com/Masterminds/semver/v3",
+      "number": 2,
+      "name": "go:github.com/Masterminds/semver/v3",
+      "evidence": [
+        {
+          "path": "go.mod",
+          "line": 6,
+          "kind": "declaration",
+          "detail": "go package github.com/Masterminds/semver/v3: v3.3.0"
+        }
+      ],
+      "evidence_count": 1,
+      "evidence_fingerprint": "64ddd4b62284e8e77585e7c7679dd2d8e1cf2165d12db895f67f3a833d462aea",
+      "presence": "detected",
+      "evidence_changed": false,
+      "review_required": true,
+      "decision": {},
+      "assessment": {
+        "significance": "unknown",
+        "confidence": "declaration",
+        "role": "unresolved",
+        "scope": "repository",
+        "profiles": [
+          "go_service"
+        ],
+        "reason": "No applicable architectural rule; retain for investigation."
+      },
+      "placement_change": {
+        "kind": "new"
+      }
+    },
+    {
+      "id": "go:github.com/alex-shpak/hugo-book",
+      "number": 3,
+      "name": "go:github.com/alex-shpak/hugo-book",
+      "evidence": [
+        {
+          "path": "docs/go.mod",
+          "line": 5,
+          "kind": "declaration",
+          "detail": "go package github.com/alex-shpak/hugo-book: v0.15.1-0.20261025203357-f221265b113c"
+        }
+      ],
+      "evidence_count": 1,
+      "evidence_fingerprint": "9af36279d803f29e93c1ba0dabab0236121eb1e3bdcc21f77bc4461f332b8896",
+      "presence": "detected",
+      "evidence_changed": false,
+      "review_required": true,
+      "decision": {},
+      "assessment": {
+        "significance": "unknown",
+        "confidence": "declaration",
+        "role": "unresolved",
+        "scope": "repository",
+        "profiles": [
+          "go_service"
+        ],
+        "reason": "No applicable architectural rule; retain for investigation."
+      },
+      "placement_change": {
+        "kind": "new"
+      }
+    },
+    {
+      "id": "go:github.com/boyter/scc/v4",
+      "number": 4,
+      "name": "go:github.com/boyter/scc/v4",
+      "evidence": [
+        {
+          "path": "go.mod",
+          "line": 7,
+          "kind": "declaration",
+          "detail": "go package github.com/boyter/scc/v4: v4.1.0"
+        }
+      ],
+      "evidence_count": 1,
+      "evidence_fingerprint": "e17380efbafdd46076af54f34857afe718fb6ffbe2157df69377c5add7a7f245",
+      "presence": "detected",
+      "evidence_changed": false,
+      "review_required": true,
+      "decision": {},
+      "assessment": {
+        "significance": "unknown",
+        "confidence": "declaration",
+        "role": "unresolved",
+        "scope": "repository",
+        "profiles": [
+          "go_service"
+        ],
+        "reason": "No applicable architectural rule; retain for investigation."
+      },
+      "placement_change": {
+        "kind": "new"
+      }
+    },
+    {
+      "id": "go:github.com/cli/go-gh/v2",
+      "number": 5,
+      "name": "go:github.com/cli/go-gh/v2",
+      "evidence": [
+        {
+          "path": "go.mod",
+          "line": 8,
+          "kind": "declaration",
+          "detail": "go package github.com/cli/go-gh/v2: v2.16.2"
+        }
+      ],
+      "evidence_count": 1,
+      "evidence_fingerprint": "2fbb53816e0cc631f29fdfea33477ee8d6175720f94690c14ad8e0d2d19f3eae",
+      "presence": "detected",
+      "evidence_changed": false,
+      "review_required": true,
+      "decision": {},
+      "assessment": {
+        "significance": "unknown",
+        "confidence": "declaration",
+        "role": "unresolved",
+        "scope": "repository",
+        "profiles": [
+          "go_service"
+        ],
+        "reason": "No applicable architectural rule; retain for investigation."
+      },
+      "placement_change": {
+        "kind": "new"
+      }
+    },
+    {
+      "id": "go:github.com/gofrs/flock",
+      "number": 6,
+      "name": "go:github.com/gofrs/flock",
+      "evidence": [
+        {
+          "path": "go.mod",
+          "line": 9,
+          "kind": "declaration",
+          "detail": "go package github.com/gofrs/flock: v0.13.1"
+        }
+      ],
+      "evidence_count": 1,
+      "evidence_fingerprint": "0c1df39026677266ba52c64b56d34d3b4d19d606a9f24518f5b58e5372b2e651",
+      "presence": "detected",
+      "evidence_changed": false,
+      "review_required": true,
+      "decision": {},
+      "assessment": {
+        "significance": "unknown",
+        "confidence": "declaration",
+        "role": "unresolved",
+        "scope": "repository",
+        "profiles": [
+          "go_service"
+        ],
+        "reason": "No applicable architectural rule; retain for investigation."
+      },
+      "placement_change": {
+        "kind": "new"
+      }
+    },
+    {
+      "id": "plugin-artifact",
+      "number": 7,
+      "name": "Plugin and skill artifacts",
+      "quadrant": "Tools",
+      "evidence": [
+        {
+          "path": "plugin/tech-radar/.claude-plugin/plugin.json",
+          "line": 1,
+          "kind": "configuration",
+          "detail": "Plugin manifest boundary; metadata omitted"
+        },
+        {
+          "path": "plugin/tech-radar/plugin.json",
+          "line": 1,
+          "kind": "configuration",
+          "detail": "Plugin manifest boundary; metadata omitted"
+        },
+        {
+          "path": "plugin/tech-radar/skills/review/SKILL.md",
+          "line": 1,
+          "kind": "configuration",
+          "detail": "Skill artifact boundary; content omitted"
+        }
+      ],
+      "evidence_count": 3,
+      "evidence_fingerprint": "c24497a681c736909a42d9b8e0f7e9dd52667abe80c06902e5ee506a4d1e5ec3",
+      "presence": "detected",
+      "evidence_changed": false,
+      "review_required": true,
+      "decision": {},
+      "assessment": {
+        "significance": "workflow_enabling",
+        "confidence": "configuration",
+        "role": "delivery/operation/development workflow",
+        "scope": "workflow",
+        "profiles": [
+          "plugin_artifact"
+        ],
+        "reason": "Enables a material delivery, operational, quality or observability workflow; assess its actual use and owner."
+      },
+      "proposal": {
+        "ring": "Trial",
+        "scope": "workflow in this repository",
+        "rationale": "Proposed bounded evaluation of this statically wired/configured boundary; validate behavior and operational fit with the team. Source wiring is not approval.",
+        "status": "proposed"
+      },
+      "placement_change": {
+        "kind": "new"
+      }
+    }
+  ],
+  "decisions": {},
+  "excluded": [],
+  "warnings": [],
+  "languages": [
+    {
+      "language": "Go",
+      "files": 34,
+      "lines": 7097,
+      "code": 6573,
+      "comments": 209,
+      "blank": 315
+    },
+    {
+      "language": "JSON",
+      "files": 2,
+      "lines": 26,
+      "code": 26,
+      "comments": 0,
+      "blank": 0
+    },
+    {
+      "language": "Markdown",
+      "files": 1,
+      "lines": 72,
+      "code": 46,
+      "comments": 0,
+      "blank": 26
+    },
+    {
+      "language": "TOML",
+      "files": 1,
+      "lines": 16,
+      "code": 14,
+      "comments": 0,
+      "blank": 2
+    },
+    {
+      "language": "gitignore",
+      "files": 1,
+      "lines": 13,
+      "code": 11,
+      "comments": 0,
+      "blank": 2
+    }
+  ],
+  "components": [
+    {
+      "path": ".",
+      "ecosystem": "Go",
+      "role": "Go module; service role unverified",
+      "profile": "go_service",
+      "reason": "Manifest/configuration signals select a candidate native checklist; deployment, implementation quality and ownership remain unverified."
+    },
+    {
+      "path": "docs",
+      "ecosystem": "Go",
+      "role": "Go module; service role unverified",
+      "profile": "go_service",
+      "reason": "Manifest/configuration signals select a candidate native checklist; deployment, implementation quality and ownership remain unverified."
+    },
+    {
+      "path": "plugin/tech-radar",
+      "ecosystem": "artifact",
+      "role": "plugin/tool contract",
+      "profile": "plugin_artifact",
+      "reason": "Manifest/configuration signals select a candidate native checklist; deployment, implementation quality and ownership remain unverified."
+    },
+    {
+      "path": "plugin/tech-radar/.claude-plugin",
+      "ecosystem": "artifact",
+      "role": "plugin/tool contract",
+      "profile": "plugin_artifact",
+      "reason": "Manifest/configuration signals select a candidate native checklist; deployment, implementation quality and ownership remain unverified."
+    },
+    {
+      "path": "plugin/tech-radar/skills/review",
+      "ecosystem": "artifact",
+      "role": "plugin/tool contract",
+      "profile": "plugin_artifact",
+      "reason": "Manifest/configuration signals select a candidate native checklist; deployment, implementation quality and ownership remain unverified."
+    }
+  ],
+  "rule_version": "context-4",
+  "highlights": [
+    {
+      "id": "go",
+      "number": 1,
+      "name": "Go",
+      "quadrant": "Languages \u0026 Frameworks",
+      "evidence": null,
+      "evidence_count": 36,
+      "evidence_fingerprint": "d76c5f507c4d0f2aa6e451f6ba9961763166488b29eb3b4c818dc227e1535f56",
+      "presence": "detected",
+      "evidence_changed": false,
+      "review_required": true,
+      "decision": {},
+      "assessment": {
+        "significance": "system_defining",
+        "confidence": "declaration",
+        "role": "native execution/domain/data boundary",
+        "scope": "component",
+        "profiles": [
+          "go_service"
+        ],
+        "reason": "The locally applicable go_service profile identifies this role; portfolio frequency does not determine significance."
+      },
+      "proposal": {
+        "ring": "Adopt",
+        "scope": "component in this repository",
+        "rationale": "Source evidence shows this technology in use in this repository. Confirm its scope and ownership with the team. This is a suggested placement, not approval.",
+        "status": "proposed"
+      },
+      "members": [
+        "go"
+      ],
+      "placement_change": {
+        "kind": "new"
+      }
+    },
+    {
+      "id": "plugin-artifact",
+      "number": 7,
+      "name": "Plugin and skill artifacts",
+      "quadrant": "Tools",
+      "evidence": null,
+      "evidence_count": 3,
+      "evidence_fingerprint": "c24497a681c736909a42d9b8e0f7e9dd52667abe80c06902e5ee506a4d1e5ec3",
+      "presence": "detected",
+      "evidence_changed": false,
+      "review_required": true,
+      "decision": {},
+      "assessment": {
+        "significance": "workflow_enabling",
+        "confidence": "configuration",
+        "role": "delivery/operation/development workflow",
+        "scope": "workflow",
+        "profiles": [
+          "plugin_artifact"
+        ],
+        "reason": "Enables a material delivery, operational, quality or observability workflow; assess its actual use and owner."
+      },
+      "proposal": {
+        "ring": "Trial",
+        "scope": "workflow in this repository",
+        "rationale": "Proposed bounded evaluation of this statically wired/configured boundary; validate behavior and operational fit with the team. Source wiring is not approval.",
+        "status": "proposed"
+      },
+      "members": [
+        "plugin-artifact"
+      ],
+      "placement_change": {
+        "kind": "new"
+      }
+    }
+  ]
+}

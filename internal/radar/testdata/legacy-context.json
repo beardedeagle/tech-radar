@@ -1,0 +1,314 @@
+{
+  "kind": "tech-radar-context",
+  "schema_version": 1,
+  "generator_version": "0.2.0",
+  "catalog_version": "portfolio-1",
+  "snapshots": [
+    {
+      "id": "local:web",
+      "name": "web",
+      "origin": "local",
+      "archived": false,
+      "fork": false,
+      "status": "captured",
+      "inventory": {
+        "source": {
+          "fingerprint": "aaf7bcbc0e4697555288e664eecfb9c462b716b4ec9cdafcd14ab9b26c43a85f",
+          "files": 2,
+          "counter": "scc/v4 v4.1.0",
+          "corpus_version": "portfolio-1"
+        },
+        "findings": [
+          {
+            "id": "react",
+            "number": 0,
+            "name": "React",
+            "quadrant": "Languages \u0026 Frameworks",
+            "evidence": [
+              {
+                "path": "package.json",
+                "line": 1,
+                "kind": "declaration",
+                "detail": "npm package react: 19 [dependencies]"
+              },
+              {
+                "path": "src/app.tsx",
+                "line": 1,
+                "kind": "source reference",
+                "detail": "React module runtime wiring"
+              }
+            ],
+            "evidence_count": 2,
+            "evidence_fingerprint": "c6e44b529fb971b1b5de030906ca312315466c2a4615b7b7232868f0c019e3db",
+            "presence": "detected",
+            "evidence_changed": false,
+            "review_required": true,
+            "decision": {}
+          },
+          {
+            "id": "typescript",
+            "number": 0,
+            "name": "TypeScript",
+            "quadrant": "Languages \u0026 Frameworks",
+            "evidence": [
+              {
+                "path": "package.json",
+                "line": 1,
+                "kind": "declaration",
+                "detail": "npm package typescript: 5 [devDependencies]"
+              },
+              {
+                "path": "src/app.tsx",
+                "line": 1,
+                "kind": "source reference",
+                "detail": "SCC language classification: TypeScript"
+              }
+            ],
+            "evidence_count": 2,
+            "evidence_fingerprint": "b4602c2c53205ba47bf856f73c6c574b9f26ce88ba26c1cea3d3664692b93708",
+            "presence": "detected",
+            "evidence_changed": false,
+            "review_required": true,
+            "decision": {}
+          }
+        ],
+        "warnings": [],
+        "languages": [
+          {
+            "language": "JSON",
+            "files": 1,
+            "lines": 1,
+            "code": 1,
+            "comments": 0,
+            "blank": 0
+          },
+          {
+            "language": "TypeScript",
+            "files": 1,
+            "lines": 2,
+            "code": 2,
+            "comments": 0,
+            "blank": 0
+          }
+        ],
+        "components": [
+          {
+            "path": ".",
+            "ecosystem": "JavaScript/TypeScript",
+            "role": "UI application",
+            "profile": "react_typescript_web",
+            "reason": "Manifest/configuration signals select a candidate native checklist; deployment, implementation quality and ownership remain unverified."
+          }
+        ],
+        "technologies": [
+          {
+            "id": "activerecord",
+            "name": "Active Record",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "apollo-graphql",
+            "name": "Apollo GraphQL",
+            "quadrant": "Languages \u0026 Frameworks",
+            "npm": [
+              "@apollo/server",
+              "apollo-server",
+              "apollo-server-lambda"
+            ]
+          },
+          {
+            "id": "argocd",
+            "name": "Argo CD",
+            "quadrant": "Tools"
+          },
+          {
+            "id": "celery",
+            "name": "Celery",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "commanded",
+            "name": "Commanded",
+            "quadrant": "Languages \u0026 Frameworks",
+            "hex": [
+              "commanded"
+            ]
+          },
+          {
+            "id": "delayed-job",
+            "name": "Delayed Job",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "eventstore",
+            "name": "EventStore",
+            "quadrant": "Languages \u0026 Frameworks",
+            "hex": [
+              "eventstore"
+            ]
+          },
+          {
+            "id": "fastapi",
+            "name": "FastAPI",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "jose",
+            "name": "jose",
+            "quadrant": "Languages \u0026 Frameworks",
+            "npm": [
+              "jose"
+            ]
+          },
+          {
+            "id": "langgraph",
+            "name": "LangGraph",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "language:php",
+            "name": "PHP",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "laravel",
+            "name": "Laravel",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "model-sdk",
+            "name": "Model provider SDKs",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "plugin-artifact",
+            "name": "Plugin and skill artifacts",
+            "quadrant": "Tools"
+          },
+          {
+            "id": "pothos",
+            "name": "Pothos",
+            "quadrant": "Languages \u0026 Frameworks",
+            "npm": [
+              "@pothos/core"
+            ]
+          },
+          {
+            "id": "prisma",
+            "name": "Prisma",
+            "quadrant": "Languages \u0026 Frameworks",
+            "npm": [
+              "prisma",
+              "@prisma/client"
+            ]
+          },
+          {
+            "id": "pydantic",
+            "name": "Pydantic",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "rails",
+            "name": "Ruby on Rails",
+            "quadrant": "Languages \u0026 Frameworks"
+          },
+          {
+            "id": "react-native",
+            "name": "React Native",
+            "quadrant": "Languages \u0026 Frameworks",
+            "npm": [
+              "react-native"
+            ]
+          },
+          {
+            "id": "redis",
+            "name": "Redis",
+            "quadrant": "Platforms",
+            "hex": [
+              "redix"
+            ],
+            "npm": [
+              "redis",
+              "ioredis"
+            ]
+          },
+          {
+            "id": "sidekiq",
+            "name": "Sidekiq",
+            "quadrant": "Languages \u0026 Frameworks"
+          }
+        ]
+      },
+      "files": [
+        {
+          "path": "package.json",
+          "sha256": "844426b441a21bb1f119fdaa97107975454e33f10726ba866ff597f939cdc23b"
+        },
+        {
+          "path": "src/app.tsx",
+          "sha256": "a6b0f5d8986b0ccceb5ef35136ed534aa1209da7d911c754a3c0edb46c960e90"
+        }
+      ]
+    }
+  ],
+  "technologies": [
+    {
+      "id": "react",
+      "name": "React",
+      "quadrant": "Languages \u0026 Frameworks",
+      "significance": "system_defining",
+      "confidence": "static wiring",
+      "repositories": [
+        "local:web"
+      ],
+      "profiles": [
+        "react_typescript_web"
+      ],
+      "evidence_count": 2
+    },
+    {
+      "id": "typescript",
+      "name": "TypeScript",
+      "quadrant": "Languages \u0026 Frameworks",
+      "significance": "implementation_support",
+      "confidence": "declaration",
+      "repositories": [
+        "local:web"
+      ],
+      "profiles": [
+        "react_typescript_web"
+      ],
+      "evidence_count": 2
+    }
+  ],
+  "profiles": [
+    {
+      "id": "react_typescript_web",
+      "name": "React web",
+      "ecosystem": "JavaScript/TypeScript",
+      "role": "UI application",
+      "concerns": [
+        "routing/rendering",
+        "client/server split",
+        "state/data caching",
+        "form/schema validation"
+      ],
+      "boundaries": [
+        "identity/tenant data",
+        "browser credentials",
+        "API contracts"
+      ],
+      "repositories": [
+        "local:web"
+      ]
+    }
+  ],
+  "limitations": [
+    "Static bounded capture only; repository code, builds and hooks are never executed. Membership reflects accessible repositories at collection, not an atomic organization snapshot.",
+    "Dependency/generated trees, tests, credentials, symlinks, binary content and eligible files larger than 2 MiB are excluded; repository warnings record additional gaps.",
+    "Literal manifest readers do not evaluate dynamic syntax or resolve dependency includes. Unknown observations remain unclassified; absence is not proof of non-use.",
+    "Profiles are provisional native checklists, not implementation, deployment, ownership or approval proof. Repository prevalence never sets significance or radar rings.",
+    "Hashes bind frozen normalized observations for reproducible compilation; they do not attest source authenticity. Keep packs private when repository metadata is private."
+  ],
+  "fingerprint": "37619622dfec2e0c03d0c2d9bf7945ea9e4c4cd1443f23ae408b89f63daf4148"
+}

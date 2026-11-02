@@ -1,0 +1,15 @@
+{
+  "name": "tech-radar-local",
+  "owner": {
+    "name": "Tech Radar maintainers"
+  },
+  "plugins": [
+    {
+      "name": "tech-radar",
+      "source": "./plugin/tech-radar",
+      "version": "0.1.0",
+      "description": "Review repository technology evidence, propose a radar, and check explicit technology policy."
+    }
+  ],
+  "description": "Local technology radar review and policy checks"
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "repository": "Example application",
+  "rules": {
+    "python": {
+      "exclude": true,
+      "rationale": "Used for supporting scripts; outside this repo's radar scope."
+    },
+    "shell": {
+      "exclude": true,
+      "rationale": "Used for supporting scripts; outside this repo's radar scope."
+    }
+  }
+}

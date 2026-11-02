@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "patterns": [
+    {
+      "id": "hubspot",
+      "pattern": "\\bExample\\.CRMClient\\b",
+      "detail": "CRM integration reference"
+    },
+    {
+      "id": "example-billing",
+      "name": "Example billing API",
+      "quadrant": "Platforms",
+      "pattern": "\\bExample\\.BillingClient\\b",
+      "detail": "Billing integration reference"
+    },
+    {
+      "id": "feature-flags",
+      "pattern": "\\bExample\\.FeatureFlags\\b",
+      "detail": "Application feature-flag reference",
+      "documentation": true
+    }
+  ]
+}

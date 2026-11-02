@@ -1,0 +1,16 @@
+baseURL = '/'
+locale = 'en-us'
+title = 'tech-radar'
+publishDir = '../output/handbook'
+resourceDir = '../output/handbook-resources'
+disableKinds = ['taxonomy', 'term', 'RSS']
+
+[module]
+[[module.imports]]
+path = 'github.com/alex-shpak/hugo-book'
+
+[params]
+BookTheme = 'auto'
+BookSearch = true
+BookSection = 'docs'
+BookPortableLinks = 'error'
