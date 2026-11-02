@@ -5,23 +5,34 @@ weight: 20
 
 # Testing
 
-Run from the project root:
+Install [just 1.54.0](https://just.systems/) and GitHub CLI, then run from the project root:
 
 ```sh
-go test -race ./...
-go vet ./...
-go build -trimpath -o tech-radar ./cmd/tech-radar
+just setup
+just ci
 ```
+
+`just setup` installs pinned development tools under `output/tools` and installs Lefthook without replacing existing hooks. Pre-commit runs `just check`; pre-push runs `just ci`. Use `just fmt` to fix formatting. Windows development uses Git Bash.
+
+The Justfile owns the commands. CI runs those same recipes, with native race tests on Linux, macOS, and Windows using the minimum Go version, plus Linux on the current pinned Go version. Documentation and release builds run on Linux. Source-installed automation tools use their own pinned Go toolchain without changing the application's module.
 
 ## Choosing tests
 
 Use temporary repositories and fake GitHub responses. Run the affected package while working, then the full checks above:
 
-- Scanner, manifests, profiles, grouping and saved reports: `go test ./internal/radar`.
-- Remote collection, archives and transport: `go test ./internal/discovery`.
-- Flags, input/output files, cancellation and exit codes: `go test ./cmd/tech-radar`.
+- Scanner, manifests, profiles, grouping and saved reports: `just test ./internal/radar`.
+- Remote collection, archives and transport: `just test ./internal/discovery`.
+- Flags, input/output files, cancellation and exit codes: `just test ./cmd/tech-radar`.
 
 Assert the finding or output exists before checking its properties. Tests should fail when the behavior disappears, not just when a forbidden result appears. Test stored data and user text separately from generated wording.
+
+## Security checks
+
+`just security` verifies the workflow dependency lockfile against GitHub and runs CodeQL's security-extended queries for Go and GitHub Actions. CodeQL downloads a checksum-verified bundle on first use, about 700 MB on Linux and Windows or 1.3 GB on macOS. Results go to `output/codeql/*.sarif`; CI uploads them to the repository's code scanning view. Query findings need review; the CLI exits successfully when analysis completes, even when it finds alerts.
+
+Run `just actions-lock` after changing an action reference and review `.github/workflows/actions.lock`. Every remote action must belong to GitHub or this project and use a full commit SHA. The pre-commit check verifies lockfile coverage offline; `just actions-verify` also checks remote provenance and needs GitHub authentication. GitHub also validates the committed lockfile when starting workflows. Enterprise policy controls for requiring lockfiles are separate from these checks.
+
+The generation recipe uses `--no-narrow --relock` to retain SHA references and rebuild the dependency records with matching keys. Leave the machine-generated lockfile intact.
 
 ## Contracts to preserve
 

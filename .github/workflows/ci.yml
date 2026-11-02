@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-latest
+            go: '1.26.4'
+          - name: macOS
+            os: macos-latest
+            go: '1.26.4'
+          - name: Windows
+            os: windows-latest
+            go: '1.26.4'
+          - name: Current Go
+            os: ubuntu-latest
+            go: '1.27.3'
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ matrix.go }}
+      - name: Set up just
+        shell: bash
+        run: bash .github/scripts/setup-just.sh
+      - name: Check, test, and build
+        run: just ci-go
+
+  automation:
+    name: Automation
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.3'
+      - name: Set up just
+        shell: bash
+        run: bash .github/scripts/setup-just.sh
+      - name: Check automation, docs, and release packages
+        run: just check-automation docs-build release-snapshot
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.3'
+      - name: Set up just
+        shell: bash
+        run: bash .github/scripts/setup-just.sh
+      - name: Verify action dependencies
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: just actions-verify
+      - name: Analyze Go and workflows
+        run: just codeql
+      - name: Upload CodeQL results
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          sarif_file: output/codeql
