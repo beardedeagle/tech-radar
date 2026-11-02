@@ -70,6 +70,69 @@ func TestContextCanonicalOfflineAndUntrustedInputs(t *testing.T) {
 	}
 }
 
+func TestContextGeneratorVersionCompatibility(t *testing.T) {
+	data, err := os.ReadFile("testdata/portfolio-2-context.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	saved, err := ReadContext(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	replayed, err := saved.Bytes()
+	if err != nil || !bytes.Equal(data, replayed) || saved.pack.GeneratorVersion != "0.2.0" {
+		t.Fatal("replay changed the saved generator version or fingerprint")
+	}
+	current, err := BuildContext(saved.Repositories())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if current.pack.GeneratorVersion != Version {
+		t.Fatalf("new context generator = %q, want %q", current.pack.GeneratorVersion, Version)
+	}
+	currentData, err := current.Bytes()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ReadContext(currentData); err != nil {
+		t.Fatalf("cannot read current generator output: %v", err)
+	}
+
+	for _, version := range []string{"", "invalid", "0.1.0", "99.0.0"} {
+		t.Run(version, func(t *testing.T) {
+			unknown, err := buildContext(saved.Repositories(), PortfolioVersion, version)
+			if err != nil {
+				t.Fatal(err)
+			}
+			unknownData, err := unknown.Bytes()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := ReadContext(unknownData); err == nil {
+				t.Fatal("accepted unsupported generator with a valid fingerprint")
+			}
+		})
+	}
+	for _, mutate := range []func(*contextPack){
+		func(p *contextPack) { p.GeneratorVersion = Version },
+		func(p *contextPack) { p.Fingerprint = "edited" },
+		func(p *contextPack) { p.Technologies[0].Name = "edited" },
+	} {
+		var p contextPack
+		if err := json.Unmarshal(data, &p); err != nil {
+			t.Fatal(err)
+		}
+		mutate(&p)
+		tampered, err := json.Marshal(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := ReadContext(tampered); err == nil {
+			t.Fatal("accepted edited legacy context")
+		}
+	}
+}
+
 func TestContextRejectsUnboundEvidenceAndHashes(t *testing.T) {
 	for _, mutate := range []func(*RepositorySnapshot){
 		func(s *RepositorySnapshot) { s.Files[0].Path = "../outside" },

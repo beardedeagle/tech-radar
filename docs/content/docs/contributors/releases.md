@@ -13,13 +13,15 @@ Update `Version` in `internal/radar/model.go` through a reviewed PR. Update vers
 
 Keep the three plugin manifests under `plugin/tech-radar` and the plugin entry in `.claude-plugin/marketplace.json` on that same version. `just check-versions` checks them against the CLI source version. Local gates and CI run this check, and publishing checks again before creating a tag. Marketplace catalogs do not need a separate release version.
 
+Version 0.2.1 also reads saved 0.2.0 contexts. Validation retains their original generator metadata and fingerprints; newly built contexts use 0.2.1. Unsupported generator versions and edited contexts are rejected.
+
 Merge the PR into `main`, then start a release from the project root:
 
 ```sh
-just release 0.2.0
+just release 0.2.1
 ```
 
-This dispatches the Release workflow on `main`. You can also choose **Run workflow** in GitHub Actions and enter the version. An optional `v` prefix is accepted. Prereleases such as `0.2.0-rc.1` are marked as prereleases. Build metadata is not accepted.
+This dispatches the Release workflow on `main`. You can also choose **Run workflow** in GitHub Actions and enter the version. An optional `v` prefix is accepted. Prereleases such as `0.2.1-rc.1` are marked as prereleases. Build metadata is not accepted.
 
 ## What runs
 

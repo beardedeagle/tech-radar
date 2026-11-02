@@ -91,10 +91,10 @@ const MaxContextBytes = 128 << 20
 // It rejects duplicate repos, invalid source metadata and embedded decisions.
 // Importance comes from each technology's role, not how many repos use it.
 func BuildContext(snapshots []RepositorySnapshot) (Context, error) {
-	return buildContext(snapshots, PortfolioVersion)
+	return buildContext(snapshots, PortfolioVersion, Version)
 }
 
-func buildContext(snapshots []RepositorySnapshot, version string) (Context, error) {
+func buildContext(snapshots []RepositorySnapshot, version, generatorVersion string) (Context, error) {
 	if len(snapshots) == 0 {
 		return Context{}, fmt.Errorf("context requires at least one repository")
 	}
@@ -109,7 +109,7 @@ func buildContext(snapshots []RepositorySnapshot, version string) (Context, erro
 	b = nil
 	copies := copySnapshots(snapshots)
 	sort.Slice(copies, func(i, j int) bool { return copies[i].ID < copies[j].ID })
-	p := contextPack{Kind: "tech-radar-context", SchemaVersion: 1, GeneratorVersion: Version, CatalogVersion: version, Snapshots: copies, Technologies: []contextTechnology{}, Profiles: []ContextProfile{}, Limitations: []string{
+	p := contextPack{Kind: "tech-radar-context", SchemaVersion: 1, GeneratorVersion: generatorVersion, CatalogVersion: version, Snapshots: copies, Technologies: []contextTechnology{}, Profiles: []ContextProfile{}, Limitations: []string{
 		"Static bounded capture only; repository code, builds and hooks are never executed. Membership reflects accessible repositories at collection, not an atomic organization snapshot.",
 		"Dependency/generated trees, tests, credentials, symlinks, binary content and eligible files larger than 2 MiB are excluded; repository warnings record additional gaps.",
 		"Literal manifest readers do not evaluate dynamic syntax or resolve dependency includes. Unknown observations remain unclassified; absence is not proof of non-use.",
@@ -208,6 +208,7 @@ func (c Context) Bytes() ([]byte, error) {
 }
 
 // ReadContext checks a saved context against a rebuild from its findings.
+// Supported older generator metadata is retained when rebuilding its fingerprint.
 // Edited checklists, unsupported versions and embedded decisions return an error.
 func ReadContext(data []byte) (Context, error) {
 	if len(data) > MaxContextBytes {
@@ -217,10 +218,11 @@ func ReadContext(data []byte) (Context, error) {
 	if err := jsonutil.DecodeStrict(data, &p); err != nil {
 		return Context{}, fmt.Errorf("context: %w", err)
 	}
-	if p.Kind != "tech-radar-context" || p.SchemaVersion != 1 || !supportedPortfolioVersion(p.CatalogVersion) || p.GeneratorVersion != Version {
+	knownGenerator := p.GeneratorVersion == Version || p.GeneratorVersion == "0.2.0"
+	if p.Kind != "tech-radar-context" || p.SchemaVersion != 1 || !supportedPortfolioVersion(p.CatalogVersion) || !knownGenerator {
 		return Context{}, fmt.Errorf("unsupported context kind/schema/catalog/generator version")
 	}
-	c, err := buildContext(p.Snapshots, p.CatalogVersion)
+	c, err := buildContext(p.Snapshots, p.CatalogVersion, p.GeneratorVersion)
 	if err != nil {
 		return Context{}, err
 	}
