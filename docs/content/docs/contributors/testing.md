@@ -16,6 +16,8 @@ just ci
 
 The Justfile owns the commands. CI runs those same recipes, with native race tests on Linux, macOS, and Windows using the minimum Go version, plus Linux on the current pinned Go version. Documentation and release builds run on Linux. Source-installed automation tools use their own pinned Go toolchain without changing the application's module.
 
+CI keeps the automation Go cache separate from native tests and shares it with publishing. The automation job saves the pinned tool binaries; security, Pages and publishing jobs restore them. Tool cache keys include the OS, architecture, Justfile and bootstrap installer, with no fallback to older keys. Cache misses use the same Just recipes to rebuild; all checks still run.
+
 ## Choosing tests
 
 Use temporary repositories and fake GitHub responses. Run the affected package while working, then the full checks above:
