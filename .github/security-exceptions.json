@@ -1,0 +1,11 @@
+{
+  "exceptions": [
+    {
+      "id": "GO-2026-5932",
+      "package": "golang.org/x/crypto",
+      "reason": "The advisory affects golang.org/x/crypto/openpgp and its subpackages, which are absent from the application and test dependency graphs. x/crypto is retained for SSH and other packages. No fixed version exists; recheck usage and the advisory before expiration.",
+      "accepted_by": "Randy Thompson",
+      "expires_on": "2026-12-02"
+    }
+  ]
+}

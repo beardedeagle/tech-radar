@@ -35,6 +35,17 @@ jobs:
       - name: Set up just
         shell: bash
         run: bash .github/scripts/setup-just.sh
+      - name: Restore automation tools
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            output/tools/actionlint-*
+            output/tools/lefthook-*
+            output/tools/goreleaser-*
+            output/tools/hugo-*
+            output/tools/actions-lock-*
+            output/tools/osv-scanner-*
+          key: automation-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Justfile', '.github/scripts/setup-just.sh') }}
       - name: Build handbook
         env:
           HUGO_BASEURL: ${{ steps.pages.outputs.base_url }}/

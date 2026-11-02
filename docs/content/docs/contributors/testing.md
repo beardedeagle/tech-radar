@@ -5,7 +5,7 @@ weight: 20
 
 # Testing
 
-Install [just 1.54.0](https://just.systems/) and GitHub CLI, then run from the project root:
+Install [just 1.54.0](https://just.systems/), GitHub CLI and jq 1.6 or newer, then run from the project root:
 
 ```sh
 just setup
@@ -15,6 +15,8 @@ just ci
 `just setup` installs pinned development tools under `output/tools` and installs Lefthook without replacing existing hooks. Pre-commit runs `just check`; pre-push runs `just ci`. Use `just fmt` to fix formatting. Windows development uses Git Bash.
 
 The Justfile owns the commands. CI runs those same recipes, with native race tests on Linux, macOS, and Windows using the minimum Go version, plus Linux on the current pinned Go version. Documentation and release builds run on Linux. Source-installed automation tools use their own pinned Go toolchain without changing the application's module.
+
+CI keeps the automation Go cache separate from native tests and shares it with publishing. The automation job saves the pinned tool binaries; security, Pages and publishing jobs restore them. Tool cache keys include the OS, architecture, Justfile and bootstrap installer, with no fallback to older keys. Cache misses use the same Just recipes to rebuild; all checks still run.
 
 ## Choosing tests
 
@@ -28,7 +30,35 @@ Assert the finding or output exists before checking its properties. Tests should
 
 ## Security checks
 
-`just security` verifies the workflow dependency lockfile against GitHub and runs CodeQL's security-extended queries for Go and GitHub Actions. CodeQL downloads a checksum-verified bundle on first use, about 700 MB on Linux and Windows or 1.3 GB on macOS. Results go to `output/codeql/*.sarif`; CI uploads them to the repository's code scanning view. Query findings need review; the CLI exits successfully when analysis completes, even when it finds alerts.
+`just security` verifies the workflow dependency lockfile against GitHub, audits dependency advisories and runs CodeQL's security-extended queries for Go and GitHub Actions. CodeQL downloads a checksum-verified bundle on first use, about 700 MB on Linux and Windows or 1.3 GB on macOS. Results go to `output/codeql/*.sarif`; CI uploads them to the repository's code scanning view. Query findings need review; the CLI exits successfully when analysis completes, even when it finds alerts.
+
+### Dependency advisories
+
+Run `just audit` to check the application and documentation modules with pinned OSV Scanner 2.7.0. It queries OSV for the dependency versions declared in `go.mod` and `docs/go.mod`, including indirect requirements. It does not establish which vulnerable functions the application calls. The compiler's standard library and build-tool dependencies installed separately under `output/tools` are outside this scan.
+
+The gate blocks every reported advisory, regardless of severity. This policy is separate from the CodeQL severity thresholds configured in the repository ruleset. Scanner failures, malformed output, and missing or empty inventories for either module also fail the gate. Go call analysis is disabled, and an empty scanner configuration prevents OSV ignore rules from bypassing this policy.
+
+An advisory can be accepted temporarily through `.github/security-exceptions.json`:
+
+```json
+{
+  "exceptions": [
+    {
+      "id": "GO-YYYY-NNNN",
+      "package": "example.com/dependency",
+      "reason": "Why this risk is accepted while the fix is pending.",
+      "accepted_by": "Maintainer name",
+      "expires_on": "2026-12-01"
+    }
+  ]
+}
+```
+
+Use the exact, case-sensitive module path for `package`. Advisory IDs and their aliases match case-insensitively. An exception covers one advisory on one dependency; it applies to that dependency in either module. The expiration date is inclusive and evaluated in UTC. Missing fields, invalid calendar dates, duplicate entries, and multiple exceptions matching the same finding are errors. Unused exceptions are reported as `STALE` and should be removed; they do not fail the gate. Add exceptions through a reviewed PR.
+
+Raw scanner output and the verdict are written to `output/audit/osv.json` and `output/audit/report.json`. The shell gate exits 0 when it passes, 1 for findings without a live exception, and 2 for scanner or policy errors. These files are ignored development output.
+
+Pre-push runs the live audit through `just ci`; the Security job runs the same `just audit` recipe. Pre-commit runs the offline policy tests through `just check`. Run those directly with `just test-audit` when changing the gate. They cover both-module completeness, advisory aliases, dependency boundaries, expiration dates and scanner failures without calling OSV.
 
 Run `just actions-lock` after changing an action reference and review `.github/workflows/actions.lock`. Every remote action must belong to GitHub or this project and use a full commit SHA. The pre-commit check verifies lockfile coverage offline; `just actions-verify` also checks remote provenance and needs GitHub authentication. GitHub also validates the committed lockfile when starting workflows. Enterprise policy controls for requiring lockfiles are separate from these checks.
 
