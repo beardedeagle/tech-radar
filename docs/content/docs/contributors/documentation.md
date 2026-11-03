@@ -19,7 +19,7 @@ just docs-serve
 
 Open `http://localhost:1313/`. Hugo rebuilds changed pages during preview.
 
-The recipe installs pinned Hugo 0.169.0 under `output/tools` using the automation Go toolchain. The CLI itself still requires Go 1.26.4. Toolchain and module downloads need network access on the first documentation build.
+The recipe installs pinned Hugo 0.169.0 under `output/tools` using the automation Go toolchain. The CLI itself still requires Go 1.26.7. Toolchain and module downloads need network access on the first documentation build.
 
 ## Build static output
 

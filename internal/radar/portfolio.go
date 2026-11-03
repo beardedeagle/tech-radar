@@ -218,7 +218,7 @@ func ReadContext(data []byte) (Context, error) {
 	if err := jsonutil.DecodeStrict(data, &p); err != nil {
 		return Context{}, fmt.Errorf("context: %w", err)
 	}
-	knownGenerator := p.GeneratorVersion == Version || p.GeneratorVersion == "0.2.0"
+	knownGenerator := p.GeneratorVersion == Version || p.GeneratorVersion == "0.2.1" || p.GeneratorVersion == "0.2.0"
 	if p.Kind != "tech-radar-context" || p.SchemaVersion != 1 || !supportedPortfolioVersion(p.CatalogVersion) || !knownGenerator {
 		return Context{}, fmt.Errorf("unsupported context kind/schema/catalog/generator version")
 	}

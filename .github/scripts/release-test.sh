@@ -2,6 +2,11 @@
 # Exercise release guards with a local remote and intercepted publication.
 set -euo pipefail
 
+# Hooks export repository-local settings that must not reach temporary Git repos.
+while IFS= read -r variable; do
+    unset "$variable"
+done < <(git rev-parse --local-env-vars)
+
 scripts="$(cd -- "$(dirname -- "$0")" && pwd -P)"
 temporary="$(mktemp -d)"
 trap 'rm -rf "$temporary"' EXIT
@@ -15,6 +20,8 @@ git add .gitignore
 git -c user.name=Test -c user.email=test@example.invalid commit --quiet -m fixture
 git remote add origin "$temporary/origin.git"
 git push --quiet origin main
+# The isolation regression only needs to exercise the real fixture setup above.
+if [[ "${1:-}" == --git-env-isolation ]]; then exit 0; fi
 export RELEASE_TEST_VERSION=0.2.1 RELEASE_TEST_BUILD_EXIT=0 RELEASE_TEST_FAIL_ASSET=''
 export RELEASE_TEST_PUBLISH_EXIT=0
 export RELEASE_TEST_GH_LOG="$temporary/gh.jsonl"
@@ -131,3 +138,37 @@ RELEASE_TEST_VERSION=0.2.1-rc.1
 run 'prerelease preparation succeeds' 0 prepare v0.2.1-rc.1 ./tech-radar
 run 'prerelease publication retains its flag' 0 publish v0.2.1-rc.1 ./tech-radar "$bundle"
 jq -es '.[-1] | index("--prerelease") != null' "$RELEASE_TEST_GH_LOG" >/dev/null
+
+# Reproduce a hook's repository-local environment using a disposable worktree.
+hook_fixture="$temporary/hook worktree"
+git worktree add --quiet -b hook-env "$hook_fixture"
+git_directory="$(git -C "$hook_fixture" rev-parse --absolute-git-dir)"
+common_directory="$(git rev-parse --path-format=absolute --git-common-dir)"
+index="$temporary/hook-index"
+cp "$git_directory/index" "$index"
+printf 'staged fixture content\n' > "$hook_fixture/staged.txt"
+GIT_INDEX_FILE="$index" git -C "$hook_fixture" add staged.txt
+cp "$index" "$temporary/index-before"
+cp "$git_directory/index" "$temporary/worktree-index-before"
+cp "$common_directory/config" "$temporary/config-before"
+cp "$hook_fixture/.gitignore" "$temporary/gitignore-before"
+git show-ref > "$temporary/refs-before"
+before="$(GIT_INDEX_FILE="$index" git -C "$hook_fixture" status --porcelain=v1)"
+(
+    cd "$hook_fixture"
+    export GIT_DIR="$git_directory" GIT_WORK_TREE="$hook_fixture"
+    export GIT_COMMON_DIR="$common_directory" GIT_INDEX_FILE="$index" GIT_PREFIX=''
+    export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.bare GIT_CONFIG_VALUE_0=true
+    bash "$scripts/release-test.sh" --git-env-isolation
+) > "$temporary/git-env.log" 2>&1 || {
+    cat "$temporary/git-env.log" >&2
+    exit 1
+}
+cmp "$index" "$temporary/index-before"
+cmp "$git_directory/index" "$temporary/worktree-index-before"
+cmp "$common_directory/config" "$temporary/config-before"
+cmp "$hook_fixture/.gitignore" "$temporary/gitignore-before"
+git show-ref > "$temporary/refs-after"
+cmp "$temporary/refs-before" "$temporary/refs-after"
+[[ "$(GIT_INDEX_FILE="$index" git -C "$hook_fixture" status --porcelain=v1)" == "$before" ]]
+printf 'ok: inherited Git environment preserves the outer worktree, indexes, config and refs\n'

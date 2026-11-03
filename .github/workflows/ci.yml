@@ -20,13 +20,13 @@ jobs:
         include:
           - name: Linux
             os: ubuntu-latest
-            go: '1.26.4'
+            go: '1.26.7'
           - name: macOS
             os: macos-latest
-            go: '1.26.4'
+            go: '1.26.7'
           - name: Windows
             os: windows-latest
-            go: '1.26.4'
+            go: '1.26.7'
           - name: Current Go
             os: ubuntu-latest
             go: '1.27.3'

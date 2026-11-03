@@ -8,7 +8,7 @@ Teams record their decisions in explicit policy files and update the report thro
 
 ## Build and run
 
-Requires Go **1.26.4 or later** and [just](https://just.systems/). From the project root:
+Requires Go **1.26.7 or later** and [just](https://just.systems/). From the project root:
 
 ```sh
 just build

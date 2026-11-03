@@ -5,7 +5,7 @@ weight: 10
 
 # Build the CLI
 
-tech-radar requires Go 1.26.4 or later and [just](https://just.systems/). Build it from the project root:
+tech-radar requires Go 1.26.7 or later and [just](https://just.systems/). Build it from the project root:
 
 ```sh
 just build
@@ -15,7 +15,7 @@ just build
 The version command identifies the CLI and its pinned language-counting engine:
 
 ```text
-tech-radar 0.2.1 (scc/v4 v4.1.0)
+tech-radar 0.3.0 (scc/v4 v4.1.0)
 ```
 
 The examples in this handbook run `./tech-radar` from that directory and pass the target repository separately. You can put the executable on your `PATH` and use `tech-radar` instead. The executable does not need to live inside the repository being scanned.

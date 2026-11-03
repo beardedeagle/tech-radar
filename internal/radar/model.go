@@ -1,6 +1,6 @@
 package radar
 
-const Version = "0.2.1"
+const Version = "0.3.0"
 
 // CounterVersion identifies the pinned language-counting engine in reports.
 const CounterVersion = "scc/v4 v4.1.0"
