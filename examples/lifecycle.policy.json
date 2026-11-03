@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "model": "lifecycle",
+  "repository": "Example UI",
+  "rules": {
+    "react": {
+      "lifecycle": "Experiment",
+      "scope": "Application web UI",
+      "rationale": "Propose a limited UI experiment for team review",
+      "status": "proposed",
+      "reference": "docs/decisions/react.md"
+    },
+    "typescript": {
+      "lifecycle": "Hold",
+      "scope": "Application TypeScript source",
+      "rationale": "Propose continuing existing TypeScript use while restricting new work pending a team decision",
+      "status": "proposed"
+    }
+  }
+}

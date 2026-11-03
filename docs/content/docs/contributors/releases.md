@@ -13,15 +13,15 @@ Update `Version` in `internal/radar/model.go` through a reviewed PR. Update vers
 
 Keep the three plugin manifests under `plugin/tech-radar` and the plugin entry in `.claude-plugin/marketplace.json` on that same version. `just check-versions` checks them against the CLI source version. Local gates and CI run this check, and publishing checks again before creating a tag. Marketplace catalogs do not need a separate release version.
 
-Version 0.2.1 also reads saved 0.2.0 contexts. Validation retains their original generator metadata and fingerprints; newly built contexts use 0.2.1. Unsupported generator versions and edited contexts are rejected.
+Version 0.3.0 also reads saved 0.2.0 and 0.2.1 contexts. Validation retains their original generator metadata and fingerprints. Newly built contexts use 0.3.0. Unsupported generator versions and edited contexts are rejected.
 
 Merge the PR into `main`, then start a release from the project root:
 
 ```sh
-just release 0.2.1
+just release 0.3.0
 ```
 
-This dispatches the Release workflow on `main`. You can also choose **Run workflow** in GitHub Actions and enter the version. An optional `v` prefix is accepted. Prereleases such as `0.2.1-rc.1` are marked as prereleases. Build metadata is not accepted.
+This dispatches the Release workflow on `main`. You can also choose **Run workflow** in GitHub Actions and enter the version. An optional `v` prefix is accepted. Prereleases such as `0.3.0-rc.1` are marked as prereleases. Build metadata is not accepted.
 
 ## What runs
 
@@ -38,7 +38,7 @@ GitHub CLI creates the remote tag and release only after verification succeeds. 
 For releases from 0.2.1 onward, verify each downloaded archive or checksum file with GitHub CLI:
 
 ```sh
-gh attestation verify tech-radar_0.2.1_darwin_arm64.tar.gz \
+gh attestation verify tech-radar_0.3.0_darwin_arm64.tar.gz \
   --repo beardedeagle/tech-radar \
   --cert-identity https://github.com/beardedeagle/tech-radar/.github/workflows/release.yml@refs/heads/main \
   --source-ref refs/heads/main --deny-self-hosted-runners

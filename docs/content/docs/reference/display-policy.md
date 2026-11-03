@@ -32,6 +32,7 @@ The approval fields above are illustrative. Real approval records identify the a
 | Field | Meaning |
 | --- | --- |
 | `schema_version` | Required value `1`. |
+| `model` | Optional `recommendation` or `lifecycle`. It must agree with an explicit `--model`. When omitted, generation inherits the previous report model or uses `recommendation`. |
 | `repository` | Optional report name. `--name` takes priority. |
 | `rules` | Object of finding IDs and decisions. |
 
@@ -41,17 +42,25 @@ The approval fields above are illustrative. Real approval records identify the a
 | --- | --- |
 | `name` | Optional display name. Required with a quadrant for a new manual ID unknown to the catalog. |
 | `quadrant` | `Techniques`, `Platforms`, `Tools`, or `Languages & Frameworks`. |
-| `ring` | `Adopt`, `Trial`, `Assess`, or `Caution`. |
+| `ring` | Recommendation placement, `Adopt`, `Trial`, `Assess`, or `Caution`. Lifecycle placement uses `lifecycle`. |
 | `scope` | Description of where the placement applies. Required for a placement. |
 | `rationale` | Reason for the decision. Required for a placement or exclusion. |
-| `status` | `proposed` or `approved`. A supplied ring with omitted status becomes proposed. |
+| `status` | `proposed` or `approved`. A supplied ring or canonical lifecycle placement with omitted status becomes proposed. |
 | `owner` | Recorded decision owner. Required for approval. |
-| `reference` | Decision or review reference. Required for approval. |
+| `reference` | Decision record, such as a repository docs path, ADR identifier, PR URL, or Drive document URL. Required for recommendation approval. Lifecycle permits it to be missing and records the review gap on subsequent generations. |
 | `reviewed` | Date in `YYYY-MM-DD` format. Required for approval. |
-| `lifecycle` | Separate free-text lifecycle, for example maintain, retire, or retired. |
+| `lifecycle` | In recommendation mode, separate free text such as maintain, retire, or retired. In lifecycle mode, `Experiment`, `Adopt`, `Hold`, or `Retire`, matched case-insensitively and saved with canonical spelling. |
 | `exclude` | True omits this finding from the radar while retaining evidence and the decision. |
 
-An exclusion cannot also recommend a ring or claim approval. Unknown fields, duplicate JSON keys, invalid rings or quadrants, and incomplete decisions fail validation.
+An exclusion cannot also recommend a ring, supply a canonical lifecycle placement in lifecycle mode, or claim approval. Unknown fields, duplicate JSON keys, invalid rings or quadrants, and incomplete decisions fail validation.
+
+## Lifecycle decisions
+
+Set top-level `"model": "lifecycle"` or pass `--model lifecycle`. A proposed lifecycle placement needs `lifecycle`, `scope`, and `rationale`. Approval also needs `status: approved`, `owner`, and a valid `reviewed` date. Lifecycle permits a missing `reference` for both statuses. The CLI records supplied metadata, and the team establishes approval authority.
+
+Without `--previous`, missing decision material creates no missing-material review gap. Other review reasons still apply, including proposed status, absent lifecycle placement, and source absence. With any `--previous`, every included technology without a nonblank `reference` has `missing_decision_material: true` and requires review. This applies to unchanged input and to a prior recommendation report. Excluded findings retain their evidence and decisions outside this review set.
+
+The CLI consumes the supplied reference without fetching it. Check that the cited record actually supports the lifecycle state and scope. A link alone establishes neither adoption nor authority. See the [worked lifecycle example](../guides/lifecycle.md).
 
 ## Exclusions
 
@@ -89,6 +98,8 @@ It remains **not detected** and has no invented evidence. Manual candidates do n
 
 ## Replay
 
-A current entry replaces the whole saved decision for its ID. Omitted entries carry forward. Changed evidence or classification retains the decision and requests review. A new review date or reference acknowledges the team's subsequent review.
+A current entry replaces the whole saved decision for its ID. Omitted entries carry forward. Changed evidence or classification retains the decision and requests review. A new review date or reference acknowledges the team's subsequent review. In lifecycle mode, clearing either field does not acknowledge an evidence change, and a missing reference still creates the subsequent-generation gap.
+
+An explicit model switch preserves supplied decisions and resets placement comparison. Carried approvals need complete target-model replacements before they can approve target placement. If a saved record cannot satisfy target validation, generation fails and requests a replacement. Recommendation Trial, Assess, and Caution never translate into lifecycle states.
 
 The CLI records supplied approval metadata without authenticating its authority. Review this file through the same process used to establish the team's standard.

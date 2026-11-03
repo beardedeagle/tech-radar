@@ -23,7 +23,11 @@ Markdown and HTML carry a saved snapshot and body checksum. The snapshot preserv
 
 The adjacent evidence file retains source locations and history for findings that disappear. A missing companion permits decision replay; a present companion with a bad hash stops it. Older compact exports may lack inferred placement history without their companion.
 
-Schema-1 reports and full self-contained exports remain readable. Current reports use schema 2. Newly recognized package aliases retain their old raw package IDs when those IDs already exist in saved reports, including their decisions and exclusions.
+Schema-1 reports and full self-contained exports remain readable. Current reports use schema 2, including the selected `model`, optional `view`, and lifecycle `baseline` metadata. Omitted model metadata in older reports means `recommendation`. Newly recognized package aliases retain their old raw package IDs when those IDs already exist in saved reports, including their decisions and exclusions.
+
+Omitted view metadata uses table for lifecycle and radar for recommendation. Generation inherits the previous view only within the same model. A view-only change preserves decisions, evidence, and placement history.
+
+Lifecycle findings retain `missing_decision_material` separately from source presence and evidence changes, and compact snapshots preserve that review state. A saved initial baseline becomes a subsequent generation when passed as `--previous`.
 
 ## Contexts and check results
 
