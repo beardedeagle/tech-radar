@@ -112,7 +112,7 @@ func validateSavedDecisions(r Report) error {
 	for _, id := range sortedKeys(r.Decisions) {
 		model := r.Model
 		d := r.Decisions[id]
-		if model == LifecycleModel && d.Ring != "" && canonicalLifecycle(d.Lifecycle) == "" {
+		if model == LifecycleModel && canonicalLifecycle(d.Lifecycle) == "" {
 			model = RecommendationModel
 		}
 		if err := validateModelRules(map[string]Decision{id: d}, model); err != nil {

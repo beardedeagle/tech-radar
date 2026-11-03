@@ -256,6 +256,9 @@ func BuildWithOptions(inv Inventory, policy Policy, previous *Report, name strin
 			f.Proposal = nil
 		}
 		if d.Exclude {
+			if previous != nil && model != previous.Model.effective() {
+				f.PlacementChange = nil
+			}
 			report.Excluded = append(report.Excluded, id)
 			report.ExcludedFindings = append(report.ExcludedFindings, f)
 			continue
