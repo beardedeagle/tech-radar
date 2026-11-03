@@ -121,6 +121,7 @@ type Policy struct {
 
 type Report struct {
 	Model Model `json:"model,omitempty"`
+	View  View  `json:"view,omitempty"`
 	// Baseline identifies a lifecycle generation without a previous report.
 	Baseline         bool                `json:"baseline,omitempty"`
 	SchemaVersion    int                 `json:"schema_version"`

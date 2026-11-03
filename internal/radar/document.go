@@ -21,6 +21,7 @@ func RenderDocument(report Report, format, evidenceFile, evidenceSHA256 string) 
 	if err := validateReport(report); err != nil {
 		return nil, err
 	}
+	report.View = report.selectedView()
 	state := report
 	state.EvidenceFile, state.EvidenceSHA256 = evidenceFile, evidenceSHA256
 	if err := validateReport(state); err != nil {
@@ -204,42 +205,46 @@ func conciseMarkdown(r Report, evidenceFile string) []byte {
 	if len(r.Components) == 0 {
 		b.WriteString("No application profile matched. The report still includes detected tools, integrations and team decisions.\n")
 	}
-	fmt.Fprintf(&b, "\n## Radar\n\n| Quadrant | %s | %s |\n|---|---|---|---|---|---|\n", strings.Join(r.Model.rings(), " | "), r.Model.pending())
-	for _, q := range append(append([]string{}, Quadrants...), "Unclassified") {
-		fmt.Fprintf(&b, "| %s", md(q))
-		for _, phase := range append(append([]string{}, r.Model.rings()...), r.Model.pending()) {
-			var labels []string
-			for _, f := range r.Highlights {
-				if quadrant(f) == q && r.Model.ring(f) == phase {
-					labels = append(labels, fmt.Sprintf("%d. %s", f.Number, md(f.Name)))
+	if r.selectedView() == TableView {
+		markdownDecisionTable(&b, r, true)
+	} else {
+		fmt.Fprintf(&b, "\n## Radar\n\n| Quadrant | %s | %s |\n|---|---|---|---|---|---|\n", strings.Join(r.Model.rings(), " | "), r.Model.pending())
+		for _, q := range append(append([]string{}, Quadrants...), "Unclassified") {
+			fmt.Fprintf(&b, "| %s", md(q))
+			for _, phase := range append(append([]string{}, r.Model.rings()...), r.Model.pending()) {
+				var labels []string
+				for _, f := range r.Highlights {
+					if quadrant(f) == q && r.Model.ring(f) == phase {
+						labels = append(labels, fmt.Sprintf("%d. %s", f.Number, md(f.Name)))
+					}
 				}
+				fmt.Fprintf(&b, " | %s", strings.Join(labels, "<br>"))
 			}
-			fmt.Fprintf(&b, " | %s", strings.Join(labels, "<br>"))
+			b.WriteString(" |\n")
 		}
-		b.WriteString(" |\n")
-	}
-	b.WriteString("\n## Main findings\n\n" + modelRingExplanation(r.Model) + "\n\n| Finding | Importance / role | Confidence | Decision / review |\n|---|---|---|---|\n")
-	for _, f := range r.Highlights {
-		d := displayDecision(f)
-		significance, confidence := "unknown", "unknown"
-		if f.Assessment != nil {
-			significance = md(significanceLabel(f.Assessment.Significance)) + ": " + md(displayRole(f.Assessment.Role))
-			confidence = md(f.Assessment.Confidence)
+		b.WriteString("\n## Main findings\n\n" + modelRingExplanation(r.Model) + "\n\n| Finding | Importance / role | Confidence | Decision / review |\n|---|---|---|---|\n")
+		for _, f := range r.Highlights {
+			d := displayDecision(f)
+			significance, confidence := "unknown", "unknown"
+			if f.Assessment != nil {
+				significance = md(significanceLabel(f.Assessment.Significance)) + ": " + md(displayRole(f.Assessment.Role))
+				confidence = md(f.Assessment.Confidence)
+			}
+			note := md(status(f))
+			if f.Decision != (Decision{}) {
+				note += ". " + md(d.Rationale) + " Scope: " + md(d.Scope)
+			}
+			if f.Decision.Owner != "" || f.Decision.Reference != "" {
+				note += ". " + md(f.Decision.Owner) + "; " + md(f.Decision.Reference) + "; " + md(f.Decision.Reviewed)
+			}
+			if f.Decision.Lifecycle != "" {
+				note += ". Lifecycle: " + md(f.Decision.Lifecycle)
+			}
+			if len(f.Members) > 1 {
+				note += ". Members: " + md(strings.Join(f.Members, ", "))
+			}
+			fmt.Fprintf(&b, "| %d. %s | %s | %s | %s: %s |\n", f.Number, md(f.Name), significance, confidence, md(r.Model.ring(f)), note)
 		}
-		note := md(status(f))
-		if f.Decision != (Decision{}) {
-			note += ". " + md(d.Rationale) + " Scope: " + md(d.Scope)
-		}
-		if f.Decision.Owner != "" || f.Decision.Reference != "" {
-			note += ". " + md(f.Decision.Owner) + "; " + md(f.Decision.Reference) + "; " + md(f.Decision.Reviewed)
-		}
-		if f.Decision.Lifecycle != "" {
-			note += ". Lifecycle: " + md(f.Decision.Lifecycle)
-		}
-		if len(f.Members) > 1 {
-			note += ". Members: " + md(strings.Join(f.Members, ", "))
-		}
-		fmt.Fprintf(&b, "| %d. %s | %s | %s | %s: %s |\n", f.Number, md(f.Name), significance, confidence, md(r.Model.ring(f)), note)
 	}
 	b.WriteString("\n## Other observations and changes\n\n")
 	unknown, changed, missing := 0, 0, 0

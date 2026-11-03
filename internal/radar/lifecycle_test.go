@@ -250,7 +250,7 @@ func TestLifecycleCompactAndEscapedRoundTrips(t *testing.T) {
 				t.Fatal(err)
 			}
 			body := strings.SplitN(string(data), snapshotStart, 2)[0]
-			if strings.Contains(body, "<script>decision</script>") || !strings.Contains(body, "Experiment") || !strings.Contains(body, "Needs decision") || !strings.Contains(body, "missing decision material") || !strings.Contains(body, "https://martinfowler.com/articles/scaling-architecture-conversationally.html") {
+			if strings.Contains(body, "<script>decision</script>") || !strings.Contains(body, "Adopt") || !strings.Contains(body, "Needs decision") || !strings.Contains(body, "missing decision material") || !strings.Contains(body, "https://martinfowler.com/articles/scaling-architecture-conversationally.html") {
 				t.Fatal("wrong lifecycle labels, gaps or escaping")
 			}
 			recovered, err := ReadReport(data)
@@ -409,7 +409,7 @@ func TestLifecycleChartPlacesAllStatesInTheirCanonicalBands(t *testing.T) {
 	for _, tt := range cases {
 		p.Rules[tt.id] = Decision{Lifecycle: tt.lifecycle, Scope: "application", Rationale: "Supplied team decision"}
 	}
-	r, err := Build(inv, p, nil, "")
+	r, err := BuildWithOptions(inv, p, nil, "", BuildOptions{View: RadarView})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -170,25 +170,31 @@ func TestCLIExcludedHistoryOnModelSwitch(t *testing.T) {
 }
 
 func TestCLILifecycleHTMLShowsReviewDateWithoutReference(t *testing.T) {
-	for _, standalone := range []bool{false, true} {
-		t.Run(fmt.Sprint(standalone), func(t *testing.T) {
-			repo, work := t.TempDir(), t.TempDir()
-			write(t, repo, "package.json", `{"dependencies":{"react":"19"}}`)
-			policy := write(t, work, "policy.json", `{"schema_version":1,"model":"lifecycle","rules":{"react":{"lifecycle":"Adopt","status":"approved","scope":"UI","rationale":"Team review","owner":"UI team","reviewed":"2026-11-03"}}}`)
-			dest := filepath.Join(work, "radar.html")
-			args := []string{"generate", "--repo", repo, "--policy", policy, "--format", "html", "--out", dest}
-			if standalone {
-				args = append(args, "--self-contained")
-			}
-			call(t, 0, args...)
-			data, err := os.ReadFile(dest)
-			if err != nil {
-				t.Fatal(err)
-			}
-			body := strings.SplitN(string(data), "\n<!-- tech-radar:snapshot\n", 2)[0]
-			if !strings.Contains(body, "<strong>Reviewed:</strong> 2026-11-03") {
-				t.Fatal("visible HTML omitted reference-free approval date")
-			}
-		})
+	for _, view := range []string{"radar", "table"} {
+		for _, standalone := range []bool{false, true} {
+			t.Run(view+"/"+fmt.Sprint(standalone), func(t *testing.T) {
+				repo, work := t.TempDir(), t.TempDir()
+				write(t, repo, "package.json", `{"dependencies":{"react":"19"}}`)
+				policy := write(t, work, "policy.json", `{"schema_version":1,"model":"lifecycle","rules":{"react":{"lifecycle":"Adopt","status":"approved","scope":"UI","rationale":"Team review","owner":"UI team","reviewed":"2026-11-03"}}}`)
+				dest := filepath.Join(work, "radar.html")
+				args := []string{"generate", "--repo", repo, "--policy", policy, "--view", view, "--format", "html", "--out", dest}
+				if standalone {
+					args = append(args, "--self-contained")
+				}
+				call(t, 0, args...)
+				data, err := os.ReadFile(dest)
+				if err != nil {
+					t.Fatal(err)
+				}
+				body := strings.SplitN(string(data), "\n<!-- tech-radar:snapshot\n", 2)[0]
+				date := "<td>2026-11-03</td>"
+				if view == "radar" {
+					date = "<strong>Reviewed:</strong> 2026-11-03"
+				}
+				if !strings.Contains(body, date) {
+					t.Fatal("visible HTML omitted reference-free approval date")
+				}
+			})
+		}
 	}
 }

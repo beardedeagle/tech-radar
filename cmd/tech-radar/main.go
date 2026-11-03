@@ -21,7 +21,7 @@ func main() { os.Exit(run(os.Args[1:], os.Stdout, os.Stderr)) }
 func run(args []string, stdout, stderr io.Writer) (exitCode int) {
 	fail := func(err error) int { fmt.Fprintln(stderr, "tech-radar:", err); return 1 }
 	if len(args) == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
-		_, err := fmt.Fprintln(stdout, "Usage: tech-radar generate|scan --repo PATH [--context PACK] [--rules FILE] [--grouping FILE] [--policy FILE] [--previous FILE] [--name NAME] [--model recommendation|lifecycle] [--format markdown|html|json] [--out FILE] [--force] [--self-contained]\n       tech-radar discover (--repo PATH ... | --org NAME | --repos FILE | --from PACK) [--rules FILE] [--out FILE] [--force]\n       tech-radar check (--repo PATH ... | --org NAME | --repos FILE | --from PACK) --policy FILE [--exceptions FILE] [--baseline FILE] [--as-of YYYY-MM-DD] [--rules FILE] [--out FILE] [--force]\n       tech-radar catalog|version")
+		_, err := fmt.Fprintln(stdout, "Usage: tech-radar generate|scan --repo PATH [--context PACK] [--rules FILE] [--grouping FILE] [--policy FILE] [--previous FILE] [--name NAME] [--model recommendation|lifecycle] [--view radar|table] [--format markdown|html|json] [--out FILE] [--force] [--self-contained]\n       tech-radar discover (--repo PATH ... | --org NAME | --repos FILE | --from PACK) [--rules FILE] [--out FILE] [--force]\n       tech-radar check (--repo PATH ... | --org NAME | --repos FILE | --from PACK) --policy FILE [--exceptions FILE] [--baseline FILE] [--as-of YYYY-MM-DD] [--rules FILE] [--out FILE] [--force]\n       tech-radar catalog|version")
 		if err != nil {
 			return fail(err)
 		}
@@ -72,6 +72,7 @@ func run(args []string, stdout, stderr io.Writer) (exitCode int) {
 	previousPath := flags.String("previous", "", "prior tech-radar Markdown, HTML or JSON export")
 	name := flags.String("name", "", "repository display name")
 	model := flags.String("model", "", "recommendation or lifecycle (inherits policy or previous report)")
+	view := flags.String("view", "", "radar or table (inherits same-model previous view; lifecycle defaults to table)")
 	format := flags.String("format", "", "markdown, html or json (default markdown; scan defaults to json)")
 	out := flags.String("out", "-", "output file, or - for stdout")
 	force := flags.Bool("force", false, "replace an unedited generated report")
@@ -181,7 +182,7 @@ func run(args []string, stdout, stderr io.Writer) (exitCode int) {
 	if err != nil {
 		return fail(err)
 	}
-	report, err := radar.BuildWithOptions(inv, policy, previous, *name, radar.BuildOptions{Model: radar.Model(*model), Grouping: grouping})
+	report, err := radar.BuildWithOptions(inv, policy, previous, *name, radar.BuildOptions{Model: radar.Model(*model), View: radar.View(*view), Grouping: grouping})
 	if err != nil {
 		return fail(err)
 	}

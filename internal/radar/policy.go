@@ -117,10 +117,11 @@ func BuildWithGrouping(inv Inventory, policy Policy, previous *Report, name stri
 	return BuildWithOptions(inv, policy, previous, name, BuildOptions{Grouping: grouping})
 }
 
-// BuildOptions selects a report model and presentation grouping. The zero value
-// inherits the policy or prior report model and uses built-in grouping.
+// BuildOptions selects a report model, view and presentation grouping. The zero
+// value inherits the model and same-model view, and uses built-in grouping.
 type BuildOptions struct {
 	Model    Model
+	View     View
 	Grouping GroupingRules
 }
 
@@ -128,6 +129,10 @@ type BuildOptions struct {
 // An explicit model must agree with an explicit policy model.
 func BuildWithOptions(inv Inventory, policy Policy, previous *Report, name string, options BuildOptions) (Report, error) {
 	model, err := selectModel(options.Model, policy.Model, previous)
+	if err != nil {
+		return Report{}, err
+	}
+	view, err := selectView(options.View, model, previous)
 	if err != nil {
 		return Report{}, err
 	}
@@ -147,7 +152,7 @@ func BuildWithOptions(inv Inventory, policy Policy, previous *Report, name strin
 	if err := validateModelRules(policy.Rules, model); err != nil {
 		return Report{}, err
 	}
-	report := Report{Model: model, Baseline: model == LifecycleModel && previous == nil, SchemaVersion: 2, GeneratorVersion: Version, Repository: "Repository", Source: inv.Source, Findings: []Finding{}, Decisions: map[string]Decision{}, Excluded: []string{}, Warnings: append([]string{}, inv.Warnings...)}
+	report := Report{Model: model, View: view, Baseline: model == LifecycleModel && previous == nil, SchemaVersion: 2, GeneratorVersion: Version, Repository: "Repository", Source: inv.Source, Findings: []Finding{}, Decisions: map[string]Decision{}, Excluded: []string{}, Warnings: append([]string{}, inv.Warnings...)}
 	report.Languages = append([]LanguageStat{}, inv.Languages...)
 	report.Components = append([]Component(nil), inv.Components...)
 	rulesChanged := previous != nil && previous.Source.RulesFingerprint != inv.Source.RulesFingerprint
