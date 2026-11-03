@@ -15,6 +15,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -662,7 +663,28 @@ var patterns = []sourcePattern{
 }
 
 func readGitHead(ctx context.Context, root string) string {
+	localEnv := exec.CommandContext(ctx, "git", "rev-parse", "--local-env-vars")
+	localEnv.WaitDelay = 100 * time.Millisecond
+	names, err := localEnv.Output()
+	if err != nil {
+		return ""
+	}
+	// Hooks export repository-local settings that override Git's -C selection.
+	localNames := make(map[string]bool)
+	for name := range strings.FieldsSeq(string(names)) {
+		localNames[name] = true
+	}
 	cmd := exec.CommandContext(ctx, "git", "-C", root, "rev-parse", "--verify", "HEAD")
+	cmd.Env = []string{}
+	for _, value := range os.Environ() {
+		name, _, _ := strings.Cut(value, "=")
+		if runtime.GOOS == "windows" {
+			name = strings.ToUpper(name)
+		}
+		if !localNames[name] {
+			cmd.Env = append(cmd.Env, value)
+		}
+	}
 	cmd.WaitDelay = 100 * time.Millisecond
 	if b, err := cmd.Output(); err == nil && gitHeadPattern.Match(bytes.TrimSpace(b)) {
 		return strings.TrimSpace(string(b))
