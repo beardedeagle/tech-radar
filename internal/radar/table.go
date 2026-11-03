@@ -125,7 +125,7 @@ func markdownDecisionTable(b *strings.Builder, r Report, concise bool) {
 			if d.Rationale != "" {
 				name += "<br>Rationale: " + tableText(d.Rationale)
 			}
-			if r.Model != LifecycleModel && f.Decision.Lifecycle != "" {
+			if f.Decision.Lifecycle != "" {
 				name += "<br>Lifecycle: " + tableText(f.Decision.Lifecycle)
 			}
 			var evidence []string
@@ -153,12 +153,217 @@ func markdownDecisionTable(b *strings.Builder, r Report, concise bool) {
 }
 
 const decisionTableStyles = `
-.decision-table{min-width:1000px;table-layout:fixed}.decision-table caption{text-align:left;font-size:22px;font-weight:650;padding:12px 0}.decision-table th,.decision-table td{vertical-align:top;overflow-wrap:anywhere}.decision-table th:first-child{width:25%}.decision-table th:last-child{width:19%}.decision-table .technology{font-size:16px}.decision-table .state-badge{display:inline-block;font-weight:700;padding:3px 9px;border:1px solid currentColor;border-radius:6px;max-width:100%;white-space:normal;background:var(--control-bg)}.state-adopt{color:var(--techniques)}.state-trial{color:var(--platforms)}.state-hold{color:var(--tools)}.state-retire{color:var(--languages)}.state-pending{color:var(--warning)}.decision-table p{margin:8px 0;font-size:13px;font-weight:400}.decision-table details{margin-top:10px;font-weight:400;font-size:13px}.decision-table summary{cursor:pointer;color:var(--link)}.decision-table ul{padding-left:18px}.decision-tables .table-wrap:focus-visible,.decision-table summary:focus-visible{outline:3px solid var(--focus);outline-offset:3px}@media print{.decision-table{min-width:0;table-layout:auto;font-size:10px}.decision-table .state-badge{white-space:normal}.decision-table .technology{font-size:12px}}
+.decision-table {
+  min-width: 1000px;
+  table-layout: fixed;
+}
+.decision-table caption {
+  text-align: left;
+  font-size: 22px;
+  font-weight: 650;
+  padding: 12px 0;
+}
+.decision-table th,
+.decision-table td {
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.decision-table th:first-child {
+  width: 25%;
+}
+.decision-table th:last-child {
+  width: 19%;
+}
+.decision-table .technology {
+  font-size: 16px;
+}
+.decision-table .state-badge {
+  display: inline-block;
+  font-weight: 700;
+  padding: 3px 9px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  max-width: 100%;
+  white-space: normal;
+  background: var(--control-bg);
+}
+.state-adopt {
+  color: var(--techniques);
+}
+.state-trial {
+  color: var(--platforms);
+}
+.state-hold {
+  color: var(--tools);
+}
+.state-retire {
+  color: var(--languages);
+}
+.state-pending {
+  color: var(--warning);
+}
+.decision-table p {
+  margin: 8px 0;
+  font-size: 13px;
+  font-weight: 400;
+}
+.decision-table details {
+  margin-top: 10px;
+  font-weight: 400;
+  font-size: 13px;
+}
+.decision-table summary {
+  cursor: pointer;
+  color: var(--link);
+}
+.decision-table ul {
+  padding-left: 18px;
+}
+.decision-tables .table-wrap:focus-visible,
+.decision-table summary:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+@media print {
+  .decision-table {
+    min-width: 0;
+    table-layout: auto;
+    font-size: 10px;
+  }
+  .decision-table .state-badge {
+    white-space: normal;
+  }
+  .decision-table .technology {
+    font-size: 12px;
+  }
+}
 `
 
 const decisionTableHTML = `
-<section class="decision-tables" aria-labelledby="decisions-title"><h2 id="decisions-title">Decisions</h2><p class="muted">State and approval are recorded separately. Expand a technology for its rationale, members and {{if .Concise}}evidence summary{{else}}source evidence{{end}}. Scroll tables sideways on narrow screens.</p>
-{{range .Groups}}<div class="table-wrap" role="region" tabindex="0" aria-label="{{.Quadrant}} decision table"><table class="decision-table"><caption>{{.Quadrant}}</caption><thead><tr><th scope="col">Technology / family</th><th scope="col">State</th><th scope="col">Scope</th><th scope="col">Owner</th><th scope="col">Decision reference</th><th scope="col">Reviewed</th><th scope="col">Changes / review</th></tr></thead><tbody>
-{{range .Findings}}<tr id="entry-{{.Number}}"><th scope="row"><span class="technology">{{.Number}}. {{.Name}}</span>{{if .FamilyID}}<p>Family: {{.FamilyID}}{{if and .GroupComponent (ne .GroupComponent ".")}}<br>Component: {{.GroupComponent}}{{end}}</p>{{end}}<details><summary>Rationale, members and evidence</summary><p><code>{{.ID}}</code></p>{{with decision .}}{{if .Rationale}}<p><strong>Rationale:</strong> {{.Rationale}}</p>{{end}}{{end}}{{if and (ne $.Report.Model "lifecycle") .Decision.Lifecycle}}<p>Lifecycle: {{.Decision.Lifecycle}}</p>{{end}}{{with .Assessment}}<p>{{significance .Significance}} · confidence: {{.Confidence}}<br>{{reason .Reason}}</p>{{end}}{{range members .}}<p><strong>{{.Name}}</strong> <code>{{.ID}}</code> · {{.EvidenceCount}} references{{if eq .Presence "not detected"}} · not detected; evidence is from the previous report{{end}}</p>{{if not $.Concise}}<ul>{{range .Evidence}}<li><code>{{.Path}}:{{.Line}}</code><br>{{.Kind}}: {{.Detail}}</li>{{else}}<li>No repository evidence available.</li>{{end}}</ul>{{if gt .EvidenceCount (len .Evidence)}}<p>Showing {{len .Evidence}} of {{.EvidenceCount}} unique evidence references.</p>{{end}}{{end}}{{end}}{{if $.Concise}}<p><a href="{{$.EvidenceFile}}">Full evidence and decisions</a></p>{{end}}</details></th><td><span class="state-badge {{stateClass .}}">{{ring .}}</span></td><td>{{with decision .}}{{if .Scope}}{{.Scope}}{{else}}Not supplied{{end}}{{end}}</td><td>{{if .Decision.Owner}}{{.Decision.Owner}}{{else}}Not supplied{{end}}</td><td>{{if .Decision.Reference}}{{.Decision.Reference}}{{else}}Not supplied{{end}}</td><td>{{if .Decision.Reviewed}}{{.Decision.Reviewed}}{{else}}Not supplied{{end}}</td><td>{{status .}}<p class="muted">{{placementNote .}}</p></td></tr>{{end}}
-</tbody></table></div>{{else}}<p>No included technologies.</p>{{end}}</section>
+<section class="decision-tables" aria-labelledby="decisions-title">
+  <h2 id="decisions-title">Decisions</h2>
+  <p class="muted">
+    State and approval are recorded separately. Expand a technology for its rationale,
+    members and {{if .Concise}}evidence summary{{else}}source evidence{{end}}.
+    Scroll tables sideways on narrow screens.
+  </p>
+  {{range .Groups}}
+    <div class="table-wrap" role="region" tabindex="0" aria-label="{{.Quadrant}} decision table">
+      <table class="decision-table">
+        <caption>{{.Quadrant}}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Technology / family</th>
+            <th scope="col">State</th>
+            <th scope="col">Scope</th>
+            <th scope="col">Owner</th>
+            <th scope="col">Decision reference</th>
+            <th scope="col">Reviewed</th>
+            <th scope="col">Changes / review</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Findings}}
+            <tr id="entry-{{.Number}}">
+              <th scope="row">
+                <span class="technology">{{.Number}}. {{.Name}}</span>
+                {{if .FamilyID}}
+                  <p>
+                    Family: {{.FamilyID}}
+                    {{if and .GroupComponent (ne .GroupComponent ".")}}
+                      <br>Component: {{.GroupComponent}}
+                    {{end}}
+                  </p>
+                {{end}}
+                <details>
+                  <summary>Rationale, members and evidence</summary>
+                  <p><code>{{.ID}}</code></p>
+                  {{with decision .}}
+                    {{if .Rationale}}
+                      <p><strong>Rationale:</strong> {{.Rationale}}</p>
+                    {{end}}
+                  {{end}}
+                  {{if .Decision.Lifecycle}}
+                    <p>Lifecycle: {{.Decision.Lifecycle}}</p>
+                  {{end}}
+                  {{with .Assessment}}
+                    <p>
+                      {{significance .Significance}} · confidence: {{.Confidence}}
+                      <br>{{reason .Reason}}
+                    </p>
+                  {{end}}
+                  {{range members .}}
+                    <p>
+                      <strong>{{.Name}}</strong> <code>{{.ID}}</code> · {{.EvidenceCount}} references
+                      {{if eq .Presence "not detected"}}
+                        · not detected; evidence is from the previous report
+                      {{end}}
+                    </p>
+                    {{if not $.Concise}}
+                      <ul>
+                        {{range .Evidence}}
+                          <li>
+                            <code>{{.Path}}:{{.Line}}</code>
+                            <br>{{.Kind}}: {{.Detail}}
+                          </li>
+                        {{else}}
+                          <li>No repository evidence available.</li>
+                        {{end}}
+                      </ul>
+                      {{if gt .EvidenceCount (len .Evidence)}}
+                        <p>Showing {{len .Evidence}} of {{.EvidenceCount}} unique evidence references.</p>
+                      {{end}}
+                    {{end}}
+                  {{end}}
+                  {{if $.Concise}}
+                    <p><a href="{{$.EvidenceFile}}">Full evidence and decisions</a></p>
+                  {{end}}
+                </details>
+              </th>
+              <td>
+                <span class="state-badge {{stateClass .}}">{{ring .}}</span>
+              </td>
+              <td>
+                {{- with decision . -}}
+                  {{- if .Scope -}}
+                    {{.Scope}}
+                  {{- else -}}
+                    Not supplied
+                  {{- end -}}
+                {{- end -}}
+              </td>
+              <td>
+                {{- if .Decision.Owner -}}
+                  {{.Decision.Owner}}
+                {{- else -}}
+                  Not supplied
+                {{- end -}}
+              </td>
+              <td>
+                {{- if .Decision.Reference -}}
+                  {{.Decision.Reference}}
+                {{- else -}}
+                  Not supplied
+                {{- end -}}
+              </td>
+              <td>
+                {{- if .Decision.Reviewed -}}
+                  {{.Decision.Reviewed}}
+                {{- else -}}
+                  Not supplied
+                {{- end -}}
+              </td>
+              <td>
+                {{status .}}
+                <p class="muted">{{placementNote .}}</p>
+              </td>
+            </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  {{else}}
+    <p>No included technologies.</p>
+  {{end}}
+</section>
 `

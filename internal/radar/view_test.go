@@ -3,6 +3,8 @@ package radar
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"html"
 	"reflect"
 	"strings"
 	"testing"
@@ -161,7 +163,12 @@ func TestDecisionTableGroupsMembersAndEscapesSuppliedText(t *testing.T) {
 				t.Fatal("full table omitted member evidence")
 			}
 			if format == "html" {
-				if !strings.Contains(body, `class="state-badge state-hold"`) || !strings.Contains(body, `<details><summary>`) || !strings.Contains(body, `scope="col">Reviewed`) || !strings.Contains(body, `role="region" tabindex="0"`) || strings.Contains(body, `const tooltip = document.getElementById`) {
+				if !strings.Contains(body, `class="state-badge state-hold"`) ||
+					!strings.Contains(body, `<details>`) ||
+					!strings.Contains(body, `<summary>Rationale, members and evidence</summary>`) ||
+					!strings.Contains(body, `scope="col">Reviewed`) ||
+					!strings.Contains(body, `role="region" tabindex="0"`) ||
+					strings.Contains(body, `const tooltip = document.getElementById`) {
 					t.Fatal("table missing accessible controls or retained radar script")
 				}
 			} else if strings.Contains(body, "[link](javascript:") || strings.Contains(body, "UI |") {
@@ -192,6 +199,49 @@ func TestCompactTableKeepsExistingRecommendationHighlights(t *testing.T) {
 		}
 		if !concise && count <= len(r.Highlights) {
 			t.Fatal("full table omitted supporting observation")
+		}
+	}
+}
+
+func TestLifecycleTablePreservesCarriedLegacyNotes(t *testing.T) {
+	inv, err := Scan(beamFixture(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, note := range []string{"maintain", "legacy <script>phase</script>|note"} {
+		policy := Policy{Rules: map[string]Decision{"phoenix": {Lifecycle: note}}}
+		original, err := Build(inv, policy, nil, "Example")
+		if err != nil {
+			t.Fatal(err)
+		}
+		r, err := BuildWithOptions(inv, Policy{}, &original, "", BuildOptions{Model: LifecycleModel})
+		if err != nil {
+			t.Fatal(err)
+		}
+		f := finding(t, Inventory{Findings: r.Findings}, "phoenix")
+		if r.View != TableView || r.Model.ring(f) != "Needs decision" || f.Decision.Status != "" || f.Decision.Lifecycle != note {
+			t.Fatal("carried legacy note changed decision meaning")
+		}
+		for _, format := range []string{"html", "markdown"} {
+			for _, compact := range []bool{false, true} {
+				t.Run(note+"/"+format+"/"+fmt.Sprint(compact), func(t *testing.T) {
+					data, err := Render(r, format)
+					if compact {
+						data, err = RenderDocument(r, format, "evidence.json", strings.Repeat("a", 64))
+					}
+					if err != nil {
+						t.Fatal(err)
+					}
+					body := strings.SplitN(string(data), snapshotStart, 2)[0]
+					want := "<br>Lifecycle: " + tableText(note)
+					if format == "html" {
+						want = "<p>Lifecycle: " + html.EscapeString(note) + "</p>"
+					}
+					if !strings.Contains(body, want) || !strings.Contains(body, "Needs decision") {
+						t.Fatalf("visible body omitted exact legacy note %q", want)
+					}
+				})
+			}
 		}
 	}
 }
