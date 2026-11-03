@@ -11,7 +11,14 @@ import (
 	"tech-radar/internal/jsonutil"
 )
 
+// ReadPolicy validates policy using its explicit model or recommendation.
 func ReadPolicy(data []byte) (Policy, error) {
+	return ReadPolicyForModel(data, RecommendationModel)
+}
+
+// ReadPolicyForModel validates policy using its explicit model or the supplied
+// fallback. A zero fallback uses recommendation semantics.
+func ReadPolicyForModel(data []byte, fallback Model) (Policy, error) {
 	var policy Policy
 	if err := jsonutil.DecodeStrict(data, &policy); err != nil {
 		return policy, fmt.Errorf("policy: %w", err)
@@ -19,7 +26,14 @@ func ReadPolicy(data []byte) (Policy, error) {
 	if policy.SchemaVersion != 1 {
 		return policy, fmt.Errorf("policy: unsupported schema_version %d (want 1)", policy.SchemaVersion)
 	}
-	return policy, validateRules(policy.Rules)
+	model := policy.Model
+	if model == "" {
+		model = fallback
+	}
+	if err := validateModel(model); err != nil {
+		return policy, err
+	}
+	return policy, validateModelRules(policy.Rules, model)
 }
 
 var validID = regexp.MustCompile(`^[a-zA-Z0-9_@][a-zA-Z0-9_@./:\-]*$`)
@@ -42,6 +56,10 @@ func sortedKeys[V any](values map[string]V) []string {
 }
 
 func validateRules(rules map[string]Decision) error {
+	return validateModelRules(rules, RecommendationModel)
+}
+
+func validateModelRules(rules map[string]Decision, model Model) error {
 	for _, id := range sortedKeys(rules) {
 		d := rules[id]
 		if !validID.MatchString(id) {
@@ -56,15 +74,19 @@ func validateRules(rules map[string]Decision) error {
 		if d.Status != "" && d.Status != "proposed" && d.Status != "approved" {
 			return fmt.Errorf("%s: status must be proposed or approved", id)
 		}
+		lifecycle := model == LifecycleModel && canonicalLifecycle(d.Lifecycle) != ""
+		if model == LifecycleModel && d.Lifecycle != "" && !lifecycle {
+			return fmt.Errorf("%s: invalid lifecycle %q", id, d.Lifecycle)
+		}
 		if d.Exclude {
-			if d.Ring != "" || d.Status != "" {
+			if d.Ring != "" || d.Status != "" || lifecycle {
 				return fmt.Errorf("%s: exclusion cannot also recommend or approve", id)
 			}
 			if strings.TrimSpace(d.Rationale) == "" {
 				return fmt.Errorf("%s: exclusion needs a rationale", id)
 			}
 		}
-		if d.Ring != "" && (strings.TrimSpace(d.Scope) == "" || strings.TrimSpace(d.Rationale) == "") {
+		if (d.Ring != "" || lifecycle) && (strings.TrimSpace(d.Scope) == "" || strings.TrimSpace(d.Rationale) == "") {
 			return fmt.Errorf("%s: a recommendation needs scope and rationale", id)
 		}
 		if d.Reviewed != "" {
@@ -72,7 +94,13 @@ func validateRules(rules map[string]Decision) error {
 				return fmt.Errorf("%s: reviewed must be a valid YYYY-MM-DD date", id)
 			}
 		}
-		if d.Status == "approved" && (d.Ring == "" || strings.TrimSpace(d.Owner) == "" || strings.TrimSpace(d.Reference) == "" || d.Reviewed == "") {
+		if model == LifecycleModel && d.Status == "approved" && !lifecycle {
+			return fmt.Errorf("%s: lifecycle approval needs a lifecycle decision", id)
+		}
+		if d.Status == "approved" && lifecycle && (strings.TrimSpace(d.Owner) == "" || strings.TrimSpace(d.Scope) == "" || strings.TrimSpace(d.Rationale) == "" || d.Reviewed == "") {
+			return fmt.Errorf("%s: lifecycle approval needs lifecycle, scope, rationale, owner and reviewed date", id)
+		}
+		if d.Status == "approved" && !lifecycle && (d.Ring == "" || strings.TrimSpace(d.Owner) == "" || strings.TrimSpace(d.Reference) == "" || d.Reviewed == "") {
 			return fmt.Errorf("%s: approval needs ring, scope, rationale, owner, reference and reviewed date", id)
 		}
 	}
@@ -86,6 +114,24 @@ func Build(inv Inventory, policy Policy, previous *Report, name string) (Report,
 // BuildWithGrouping applies explicit presentation rules while retaining raw
 // finding identities, evidence and policy. Invalid catalog inputs return errors.
 func BuildWithGrouping(inv Inventory, policy Policy, previous *Report, name string, grouping GroupingRules) (Report, error) {
+	return BuildWithOptions(inv, policy, previous, name, BuildOptions{Grouping: grouping})
+}
+
+// BuildOptions selects a report model and presentation grouping. The zero value
+// inherits the policy or prior report model and uses built-in grouping.
+type BuildOptions struct {
+	Model    Model
+	Grouping GroupingRules
+}
+
+// BuildWithOptions builds a report without translating decisions between models.
+// An explicit model must agree with an explicit policy model.
+func BuildWithOptions(inv Inventory, policy Policy, previous *Report, name string, options BuildOptions) (Report, error) {
+	model, err := selectModel(options.Model, policy.Model, previous)
+	if err != nil {
+		return Report{}, err
+	}
+	grouping := options.Grouping
 	if grouping.families == nil {
 		var err error
 		grouping, err = defaultGrouping()
@@ -98,10 +144,10 @@ func BuildWithGrouping(inv Inventory, policy Policy, previous *Report, name stri
 	if policy.SchemaVersion != 0 && policy.SchemaVersion != 1 {
 		return Report{}, fmt.Errorf("unsupported policy schema_version %d", policy.SchemaVersion)
 	}
-	if err := validateRules(policy.Rules); err != nil {
+	if err := validateModelRules(policy.Rules, model); err != nil {
 		return Report{}, err
 	}
-	report := Report{SchemaVersion: 2, GeneratorVersion: Version, Repository: "Repository", Source: inv.Source, Findings: []Finding{}, Decisions: map[string]Decision{}, Excluded: []string{}, Warnings: append([]string{}, inv.Warnings...)}
+	report := Report{Model: model, Baseline: model == LifecycleModel && previous == nil, SchemaVersion: 2, GeneratorVersion: Version, Repository: "Repository", Source: inv.Source, Findings: []Finding{}, Decisions: map[string]Decision{}, Excluded: []string{}, Warnings: append([]string{}, inv.Warnings...)}
 	report.Languages = append([]LanguageStat{}, inv.Languages...)
 	report.Components = append([]Component(nil), inv.Components...)
 	rulesChanged := previous != nil && previous.Source.RulesFingerprint != inv.Source.RulesFingerprint
@@ -113,11 +159,20 @@ func BuildWithGrouping(inv Inventory, policy Policy, previous *Report, name stri
 		if previous.SchemaVersion != 1 && previous.SchemaVersion != 2 {
 			return Report{}, fmt.Errorf("unsupported previous schema_version %d", previous.SchemaVersion)
 		}
-		if err := validateRules(previous.Decisions); err != nil {
+		if err := validateModel(previous.Model); err != nil {
+			return Report{}, err
+		}
+		if err := validateSavedDecisions(*previous); err != nil {
 			return Report{}, fmt.Errorf("previous decisions: %w", err)
 		}
 		report.Repository = previous.Repository
 		for id, d := range previous.Decisions {
+			if model != previous.Model.effective() && d.Status == "approved" {
+				_, replaced := policy.Rules[id]
+				if !replaced && (model == RecommendationModel || canonicalLifecycle(d.Lifecycle) != "") {
+					return Report{}, fmt.Errorf("%s: model switch requires an explicit %s policy replacement for the saved approval", id, model)
+				}
+			}
 			report.Decisions[id] = d
 		}
 		for _, f := range previous.Findings {
@@ -140,7 +195,12 @@ func BuildWithGrouping(inv Inventory, policy Policy, previous *Report, name stri
 		report.Repository = name
 	}
 	for id, d := range policy.Rules {
-		if d.Ring != "" && d.Status == "" {
+		if model == LifecycleModel {
+			if canonical := canonicalLifecycle(d.Lifecycle); canonical != "" {
+				d.Lifecycle = canonical
+			}
+		}
+		if (d.Ring != "" || (model == LifecycleModel && canonicalLifecycle(d.Lifecycle) != "")) && d.Status == "" {
 			d.Status = "proposed"
 		}
 		report.Decisions[id] = d
@@ -191,6 +251,10 @@ func BuildWithGrouping(inv Inventory, policy Policy, previous *Report, name stri
 		d := report.Decisions[id]
 		f.Evidence = append([]Evidence{}, f.Evidence...)
 		f.Decision = d
+		f.MissingDecisionMaterial = false
+		if model == LifecycleModel {
+			f.Proposal = nil
+		}
 		if d.Exclude {
 			report.Excluded = append(report.Excluded, id)
 			report.ExcludedFindings = append(report.ExcludedFindings, f)
@@ -223,11 +287,18 @@ func BuildWithGrouping(inv Inventory, policy Policy, previous *Report, name stri
 				changed = changed || !reflect.DeepEqual(f.Evidence, old.Evidence)
 			}
 			f.EvidenceChanged = old.EvidenceChanged || changed
-			if replacement, explicit := policy.Rules[id]; explicit && (replacement.Reference != old.Decision.Reference || replacement.Reviewed != old.Decision.Reviewed) {
-				f.EvidenceChanged = false
+			if replacement, explicit := policy.Rules[id]; explicit {
+				reviewed := replacement.Reference != old.Decision.Reference || replacement.Reviewed != old.Decision.Reviewed
+				if model == LifecycleModel {
+					reviewed = (strings.TrimSpace(replacement.Reference) != "" && replacement.Reference != old.Decision.Reference) || (replacement.Reviewed != "" && replacement.Reviewed != old.Decision.Reviewed)
+				}
+				if reviewed {
+					f.EvidenceChanged = false
+				}
 			}
 		}
-		f.ReviewRequired = f.Presence != "detected" || f.EvidenceChanged || d.Status != "approved" || f.Quadrant == ""
+		f.MissingDecisionMaterial = model == LifecycleModel && previous != nil && strings.TrimSpace(d.Reference) == ""
+		f.ReviewRequired = f.MissingDecisionMaterial || (model != LifecycleModel && d.Ring == "") || (model == LifecycleModel && canonicalLifecycle(d.Lifecycle) == "") || f.Presence != "detected" || f.EvidenceChanged || d.Status != "approved" || f.Quadrant == ""
 		report.Findings = append(report.Findings, f)
 	}
 	sort.Strings(report.Excluded)

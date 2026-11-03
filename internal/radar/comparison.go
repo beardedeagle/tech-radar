@@ -22,6 +22,30 @@ func comparePlacements(r *Report, previous *Report) {
 			}
 		}
 	}
+	if previous != nil && r.Model.effective() != previous.Model.effective() {
+		for i := range r.Findings {
+			f := &r.Findings[i]
+			f.PlacementChange = nil
+			if _, exists := prior[f.ID]; !exists {
+				f.PlacementChange = &PlacementChange{Kind: "new"}
+			}
+		}
+		for i := range r.Highlights {
+			f := &r.Highlights[i]
+			f.PlacementChange = nil
+			known := false
+			for _, id := range f.Members {
+				if _, exists := prior[id]; exists {
+					known = true
+					break
+				}
+			}
+			if !known {
+				f.PlacementChange = &PlacementChange{Kind: "new"}
+			}
+		}
+		return
+	}
 	replay := previous != nil && samePlacementInputs(*r, *previous, prior, highlights)
 	for i := range r.Findings {
 		f := &r.Findings[i]
@@ -32,7 +56,7 @@ func comparePlacements(r *Report, previous *Report) {
 			f.PlacementChange = &PlacementChange{Kind: "new"}
 		} else {
 			old, exists := prior[f.ID]
-			f.PlacementChange = placementChange(*f, old, exists)
+			f.PlacementChange = placementChange(r.Model, *f, old, exists)
 		}
 	}
 	for i := range r.Highlights {
@@ -45,9 +69,9 @@ func comparePlacements(r *Report, previous *Report) {
 		if replay {
 			f.PlacementChange = copyPlacementChange(highlights[f.ID].PlacementChange)
 		} else if old, exists := families[familyIdentity(*f)]; f.FamilyID != "" && exists {
-			f.PlacementChange = placementChange(*f, old, true)
+			f.PlacementChange = placementChange(r.Model, *f, old, true)
 		} else if old, exists := highlights[f.ID]; exists && compatibleFamily(*f, old) {
-			f.PlacementChange = placementChange(*f, old, true)
+			f.PlacementChange = placementChange(r.Model, *f, old, true)
 		} else if len(previous.Highlights) > 0 {
 			var matches []Finding
 			for _, old := range previous.Highlights {
@@ -63,14 +87,14 @@ func comparePlacements(r *Report, previous *Report) {
 			}
 			if len(f.Members) > 1 && len(matches) == 1 {
 				// Adding a service can change a family's representative ID.
-				f.PlacementChange = placementChange(*f, matches[0], true)
+				f.PlacementChange = placementChange(r.Model, *f, matches[0], true)
 			} else if len(matches) == 0 || len(f.Members) == 1 {
 				f.PlacementChange = &PlacementChange{Kind: "new"}
 			}
 		} else if old, exists := prior[f.ID]; !exists {
 			f.PlacementChange = &PlacementChange{Kind: "new"}
 		} else if len(previous.Highlights) == 0 && len(f.Members) == 1 {
-			f.PlacementChange = placementChange(*f, old, true)
+			f.PlacementChange = placementChange(r.Model, *f, old, true)
 		}
 	}
 }
@@ -78,7 +102,7 @@ func comparePlacements(r *Report, previous *Report) {
 // Repeating a report version keeps its original comparison, including badges.
 // Otherwise an unchanged regeneration would create a diff or erase movement.
 func samePlacementInputs(current, previous Report, prior, highlights map[string]Finding) bool {
-	if current.Source != previous.Source || current.Repository != previous.Repository ||
+	if current.Model.effective() != previous.Model.effective() || current.Baseline != previous.Baseline || current.Source != previous.Source || current.Repository != previous.Repository ||
 		current.GeneratorVersion != previous.GeneratorVersion || current.RuleVersion != previous.RuleVersion ||
 		len(current.Findings) != len(previous.Findings) || !reflect.DeepEqual(current.Decisions, previous.Decisions) ||
 		!reflect.DeepEqual(current.Warnings, previous.Warnings) {
@@ -88,8 +112,8 @@ func samePlacementInputs(current, previous Report, prior, highlights map[string]
 		old, exists := prior[f.ID]
 		if !exists || f.Name != old.Name || f.Quadrant != old.Quadrant || f.Presence != old.Presence ||
 			f.EvidenceFingerprint != old.EvidenceFingerprint || f.EvidenceCount != old.EvidenceCount ||
-			f.EvidenceChanged != old.EvidenceChanged || f.ReviewRequired != old.ReviewRequired ||
-			(old.Proposal != nil && ring(f) != ring(old)) ||
+			f.MissingDecisionMaterial != old.MissingDecisionMaterial || f.EvidenceChanged != old.EvidenceChanged || f.ReviewRequired != old.ReviewRequired ||
+			(old.Proposal != nil && current.Model.ring(f) != current.Model.ring(old)) ||
 			(old.Assessment != nil && !reflect.DeepEqual(f.Assessment, old.Assessment)) {
 			return false
 		}
@@ -100,7 +124,7 @@ func samePlacementInputs(current, previous Report, prior, highlights map[string]
 		}
 		for _, f := range current.Highlights {
 			old, exists := highlights[f.ID]
-			if !exists || f.Name != old.Name || f.FamilyID != old.FamilyID || f.GroupComponent != old.GroupComponent || f.Quadrant != old.Quadrant || ring(f) != ring(old) || !reflect.DeepEqual(f.Members, old.Members) {
+			if !exists || f.Name != old.Name || f.FamilyID != old.FamilyID || f.GroupComponent != old.GroupComponent || f.Quadrant != old.Quadrant || current.Model.ring(f) != current.Model.ring(old) || !reflect.DeepEqual(f.Members, old.Members) {
 				return false
 			}
 		}
@@ -116,20 +140,20 @@ func copyPlacementChange(change *PlacementChange) *PlacementChange {
 	return &copy
 }
 
-func placementChange(current, previous Finding, exists bool) *PlacementChange {
+func placementChange(model Model, current, previous Finding, exists bool) *PlacementChange {
 	if !exists {
 		return &PlacementChange{Kind: "new"}
 	}
-	if previous.Decision.Ring == "" && previous.Proposal == nil {
+	if model != LifecycleModel && previous.Decision.Ring == "" && previous.Proposal == nil {
 		return nil
 	}
-	before, after := ring(previous), ring(current)
+	before, after := model.ring(previous), model.ring(current)
 	change := &PlacementChange{Kind: "unchanged", PreviousRing: before, PreviousQuadrant: previous.Quadrant}
 	if before == after && previous.Quadrant == current.Quadrant {
 		return change
 	}
 	change.Kind = "moved"
-	from, to := slices.Index(Rings, before), slices.Index(Rings, after)
+	from, to := slices.Index(model.rings(), before), slices.Index(model.rings(), after)
 	if from >= 0 && to >= 0 {
 		if to < from {
 			change.Kind = "moved-in"

@@ -2,7 +2,7 @@ package radar
 
 import "strings"
 
-func chartTooltip(f Finding) string {
+func chartTooltip(model Model, f Finding) string {
 	change := "No previous placement available"
 	if c := f.PlacementChange; c != nil {
 		switch c.Kind {
@@ -23,7 +23,7 @@ func chartTooltip(f Finding) string {
 			}
 		}
 	}
-	text := f.Name + "\n" + quadrant(f) + " / " + ring(f) + "\n" + status(f) + "\n" + change
+	text := f.Name + "\n" + quadrant(f) + " / " + model.ring(f) + "\n" + status(f) + "\n" + change
 	if f.GroupComponent != "" && f.GroupComponent != "." {
 		text += "\nComponent: " + f.GroupComponent
 	}

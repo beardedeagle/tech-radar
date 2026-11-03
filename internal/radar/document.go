@@ -191,6 +191,7 @@ func conciseMarkdown(r Report, evidenceFile string) []byte {
 	fmt.Fprintf(&b, "%s\n# %s Technology Radar\n\n", GeneratedMarker, md(r.Repository))
 	fmt.Fprintf(&b, "%d main findings from %d findings across %d scanned files.\n\n", len(r.Highlights), len(r.Findings), r.Source.Files)
 
+	b.WriteString(modelReviewNote(r) + "\n\n")
 	fmt.Fprintf(&b, "[Full evidence and decisions](%s). Source fingerprint: `%s`.\n\n", url.PathEscape(evidenceFile), r.Source.Fingerprint)
 	b.WriteString("## Architecture\n\n")
 	for _, c := range r.Components {
@@ -203,13 +204,13 @@ func conciseMarkdown(r Report, evidenceFile string) []byte {
 	if len(r.Components) == 0 {
 		b.WriteString("No application profile matched. The report still includes detected tools, integrations and team decisions.\n")
 	}
-	b.WriteString("\n## Radar\n\n| Quadrant | Adopt | Trial | Assess | Caution | Needs review |\n|---|---|---|---|---|---|\n")
+	fmt.Fprintf(&b, "\n## Radar\n\n| Quadrant | %s | %s |\n|---|---|---|---|---|---|\n", strings.Join(r.Model.rings(), " | "), r.Model.pending())
 	for _, q := range append(append([]string{}, Quadrants...), "Unclassified") {
 		fmt.Fprintf(&b, "| %s", md(q))
-		for _, phase := range append(append([]string{}, Rings...), "Needs review") {
+		for _, phase := range append(append([]string{}, r.Model.rings()...), r.Model.pending()) {
 			var labels []string
 			for _, f := range r.Highlights {
-				if quadrant(f) == q && ring(f) == phase {
+				if quadrant(f) == q && r.Model.ring(f) == phase {
 					labels = append(labels, fmt.Sprintf("%d. %s", f.Number, md(f.Name)))
 				}
 			}
@@ -217,7 +218,7 @@ func conciseMarkdown(r Report, evidenceFile string) []byte {
 		}
 		b.WriteString(" |\n")
 	}
-	b.WriteString("\n## Main findings\n\nSuggested Adopt reflects established source use; Trial reflects configuration; Assess calls for investigation. Groups follow their strongest use evidence. Suggestions need team review; saved decisions take priority.\n\n| Finding | Importance / role | Confidence | Decision / review |\n|---|---|---|---|\n")
+	b.WriteString("\n## Main findings\n\n" + modelRingExplanation(r.Model) + "\n\n| Finding | Importance / role | Confidence | Decision / review |\n|---|---|---|---|\n")
 	for _, f := range r.Highlights {
 		d := displayDecision(f)
 		significance, confidence := "unknown", "unknown"
@@ -238,7 +239,7 @@ func conciseMarkdown(r Report, evidenceFile string) []byte {
 		if len(f.Members) > 1 {
 			note += ". Members: " + md(strings.Join(f.Members, ", "))
 		}
-		fmt.Fprintf(&b, "| %d. %s | %s | %s | %s: %s |\n", f.Number, md(f.Name), significance, confidence, md(ring(f)), note)
+		fmt.Fprintf(&b, "| %d. %s | %s | %s | %s: %s |\n", f.Number, md(f.Name), significance, confidence, md(r.Model.ring(f)), note)
 	}
 	b.WriteString("\n## Other observations and changes\n\n")
 	unknown, changed, missing := 0, 0, 0
@@ -261,6 +262,11 @@ func conciseMarkdown(r Report, evidenceFile string) []byte {
 	for _, w := range r.Warnings {
 		fmt.Fprintf(&b, "- **Warning:** %s\n", md(w))
 	}
-	b.WriteString("\nEdit policy and regenerate with --previous. Commit the linked evidence file to keep the full history. Direct edits to this document stop reimport so they aren't discarded.\n\nMethod: [Thoughtworks Technology Radar](https://www.thoughtworks.com/en-us/radar), Volume 34.\n")
+	b.WriteString("\nEdit policy and regenerate with --previous. Commit the linked evidence file to keep the full history. Direct edits to this document stop reimport so they aren't discarded.\n\n")
+	if r.Model == LifecycleModel {
+		b.WriteString(lifecycleMethod + "\n")
+	} else {
+		b.WriteString("Method: [Thoughtworks Technology Radar](https://www.thoughtworks.com/en-us/radar), Volume 34.\n")
+	}
 	return []byte(b.String())
 }

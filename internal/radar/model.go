@@ -54,23 +54,25 @@ type Decision struct {
 }
 
 type Finding struct {
-	ID                  string           `json:"id"`
-	Number              int              `json:"number"`
-	Name                string           `json:"name"`
-	Quadrant            string           `json:"quadrant,omitempty"`
-	Evidence            []Evidence       `json:"evidence"`
-	EvidenceCount       int              `json:"evidence_count"`
-	EvidenceFingerprint string           `json:"evidence_fingerprint,omitempty"`
-	Presence            string           `json:"presence"`
-	EvidenceChanged     bool             `json:"evidence_changed"`
-	ReviewRequired      bool             `json:"review_required"`
-	Decision            Decision         `json:"decision"`
-	Assessment          *Assessment      `json:"assessment,omitempty"`
-	Proposal            *Decision        `json:"proposal,omitempty"`
-	Members             []string         `json:"members,omitempty"`
-	PlacementChange     *PlacementChange `json:"placement_change,omitempty"`
-	FamilyID            string           `json:"family_id,omitempty"`
-	GroupComponent      string           `json:"group_component,omitempty"`
+	// MissingDecisionMaterial marks a lifecycle review gap on subsequent generations.
+	MissingDecisionMaterial bool             `json:"missing_decision_material,omitempty"`
+	ID                      string           `json:"id"`
+	Number                  int              `json:"number"`
+	Name                    string           `json:"name"`
+	Quadrant                string           `json:"quadrant,omitempty"`
+	Evidence                []Evidence       `json:"evidence"`
+	EvidenceCount           int              `json:"evidence_count"`
+	EvidenceFingerprint     string           `json:"evidence_fingerprint,omitempty"`
+	Presence                string           `json:"presence"`
+	EvidenceChanged         bool             `json:"evidence_changed"`
+	ReviewRequired          bool             `json:"review_required"`
+	Decision                Decision         `json:"decision"`
+	Assessment              *Assessment      `json:"assessment,omitempty"`
+	Proposal                *Decision        `json:"proposal,omitempty"`
+	Members                 []string         `json:"members,omitempty"`
+	PlacementChange         *PlacementChange `json:"placement_change,omitempty"`
+	FamilyID                string           `json:"family_id,omitempty"`
+	GroupComponent          string           `json:"group_component,omitempty"`
 }
 
 // PlacementChange compares the displayed ring and quadrant with a known prior
@@ -111,12 +113,16 @@ type Inventory struct {
 }
 
 type Policy struct {
+	Model         Model               `json:"model,omitempty"`
 	SchemaVersion int                 `json:"schema_version"`
 	Repository    string              `json:"repository,omitempty"`
 	Rules         map[string]Decision `json:"rules"`
 }
 
 type Report struct {
+	Model Model `json:"model,omitempty"`
+	// Baseline identifies a lifecycle generation without a previous report.
+	Baseline         bool                `json:"baseline,omitempty"`
 	SchemaVersion    int                 `json:"schema_version"`
 	GeneratorVersion string              `json:"generator_version"`
 	Repository       string              `json:"repository"`

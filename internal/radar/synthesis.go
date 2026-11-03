@@ -152,20 +152,22 @@ func synthesizeWithGrouping(r *Report, grouping GroupingRules) {
 		a := assessPortfolio(*f, r.Components)
 		f.Assessment, f.Proposal, f.Members = &a, nil, nil
 		f.FamilyID, f.GroupComponent = "", ""
-		f.Proposal = suggestPlacement(*f, a)
+		if r.Model != LifecycleModel {
+			f.Proposal = suggestPlacement(*f, a)
+		}
 		byID[f.ID] = *f
 	}
 	roots, families, scopes := assignFamilies(byID, grouping)
 	groups := map[string][]string{}
 	for _, f := range r.Findings {
 		root := f.ID
-		if f.Decision == (Decision{}) {
+		if f.Decision == (Decision{}) || r.Model == LifecycleModel {
 			if family, ok := roots[f.ID]; ok {
 				root = family
 			}
 		}
 		parent, ok := byID[root]
-		if !ok || parent.Presence != "detected" || (parent.Quadrant == "" && families[root].Quadrant == "") || (root != f.ID && (f.Presence != "detected" || parent.Decision != (Decision{}))) {
+		if !ok || parent.Presence != "detected" || (parent.Quadrant == "" && families[root].Quadrant == "") || (root != f.ID && (f.Presence != "detected" || !groupableDecisions(r.Model, parent.Decision, f.Decision))) {
 			root = f.ID
 		}
 		groups[root] = append(groups[root], f.ID)
@@ -177,19 +179,21 @@ func synthesizeWithGrouping(r *Report, grouping GroupingRules) {
 		assessment := *f.Assessment
 		f.Assessment = &assessment
 		family, recognized := families[id]
-		if recognized && f.Decision == (Decision{}) {
+		if recognized && (f.Decision == (Decision{}) || r.Model == LifecycleModel) {
 			if roots[id] == id {
 				f.FamilyID, f.GroupComponent = family.ID, scopes[id]
 			}
 			if f.Quadrant == "" {
 				f.Quadrant = family.Quadrant
 			}
-			if len(f.Members) > 1 || (f.Name == f.ID && roots[id] == id) {
+			if f.Decision.Name == "" && (len(f.Members) > 1 || (f.Name == f.ID && roots[id] == id)) {
 				f.Name = family.Name
 			}
 			if assessment.Significance == "unknown" {
 				assessment = familyAssessment(f, family)
-				f.Proposal = suggestPlacement(f, assessment)
+				if r.Model != LifecycleModel {
+					f.Proposal = suggestPlacement(f, assessment)
+				}
 			}
 		}
 		for _, member := range f.Members {
@@ -198,7 +202,9 @@ func synthesizeWithGrouping(r *Report, grouping GroupingRules) {
 				m.Quadrant = family.Quadrant
 				a := familyAssessment(m, family)
 				m.Assessment = &a
-				m.Proposal = suggestPlacement(m, a)
+				if r.Model != LifecycleModel {
+					m.Proposal = suggestPlacement(m, a)
+				}
 			}
 			if significanceRank(m.Assessment.Significance) > significanceRank(assessment.Significance) {
 				assessment.Significance, assessment.Role, assessment.Scope, assessment.Reason = m.Assessment.Significance, m.Assessment.Role, m.Assessment.Scope, m.Assessment.Reason
@@ -209,11 +215,17 @@ func synthesizeWithGrouping(r *Report, grouping GroupingRules) {
 			if m.Proposal != nil && (f.Proposal == nil || slices.Index(Rings, m.Proposal.Ring) < slices.Index(Rings, f.Proposal.Ring)) {
 				f.Proposal = m.Proposal
 			}
+			if m.ReviewRequired {
+				f.ReviewRequired = true
+			}
+			if m.MissingDecisionMaterial {
+				f.MissingDecisionMaterial, f.ReviewRequired = true, true
+			}
 			if m.EvidenceChanged {
 				f.EvidenceChanged, f.ReviewRequired = true, true
 			}
 		}
-		if f.Assessment.Significance != "system_defining" && f.Assessment.Significance != "workflow_enabling" && f.Decision == (Decision{}) {
+		if r.Model != LifecycleModel && f.Assessment.Significance != "system_defining" && f.Assessment.Significance != "workflow_enabling" && f.Decision == (Decision{}) {
 			continue
 		}
 		// Reference original findings instead of duplicating their source evidence.

@@ -315,7 +315,7 @@ func normalizeSnapshot(s *RepositorySnapshot, known map[string]Technology) error
 			return fmt.Errorf("invalid or duplicate finding %q", f.ID)
 		}
 		ids[f.ID] = true
-		if f.Decision != (Decision{}) || f.Proposal != nil || f.Assessment != nil || f.PlacementChange != nil || f.FamilyID != "" || f.GroupComponent != "" || len(f.Members) > 0 || f.Number != 0 || f.EvidenceChanged || !f.ReviewRequired || f.Presence != "detected" {
+		if f.Decision != (Decision{}) || f.Proposal != nil || f.Assessment != nil || f.PlacementChange != nil || f.FamilyID != "" || f.GroupComponent != "" || len(f.Members) > 0 || f.Number != 0 || f.EvidenceChanged || f.MissingDecisionMaterial || !f.ReviewRequired || f.Presence != "detected" {
 			return fmt.Errorf("capture must contain observations without decisions or derived assessments")
 		}
 		seen := map[Evidence]bool{}

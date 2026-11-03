@@ -21,7 +21,7 @@ func main() { os.Exit(run(os.Args[1:], os.Stdout, os.Stderr)) }
 func run(args []string, stdout, stderr io.Writer) (exitCode int) {
 	fail := func(err error) int { fmt.Fprintln(stderr, "tech-radar:", err); return 1 }
 	if len(args) == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
-		_, err := fmt.Fprintln(stdout, "Usage: tech-radar generate|scan --repo PATH [--context PACK] [--rules FILE] [--grouping FILE] [--policy FILE] [--previous FILE] [--name NAME] [--format markdown|html|json] [--out FILE] [--force] [--self-contained]\n       tech-radar discover (--repo PATH ... | --org NAME | --repos FILE | --from PACK) [--rules FILE] [--out FILE] [--force]\n       tech-radar check (--repo PATH ... | --org NAME | --repos FILE | --from PACK) --policy FILE [--exceptions FILE] [--baseline FILE] [--as-of YYYY-MM-DD] [--rules FILE] [--out FILE] [--force]\n       tech-radar catalog|version")
+		_, err := fmt.Fprintln(stdout, "Usage: tech-radar generate|scan --repo PATH [--context PACK] [--rules FILE] [--grouping FILE] [--policy FILE] [--previous FILE] [--name NAME] [--model recommendation|lifecycle] [--format markdown|html|json] [--out FILE] [--force] [--self-contained]\n       tech-radar discover (--repo PATH ... | --org NAME | --repos FILE | --from PACK) [--rules FILE] [--out FILE] [--force]\n       tech-radar check (--repo PATH ... | --org NAME | --repos FILE | --from PACK) --policy FILE [--exceptions FILE] [--baseline FILE] [--as-of YYYY-MM-DD] [--rules FILE] [--out FILE] [--force]\n       tech-radar catalog|version")
 		if err != nil {
 			return fail(err)
 		}
@@ -71,6 +71,7 @@ func run(args []string, stdout, stderr io.Writer) (exitCode int) {
 	contextPath := flags.String("context", "", "context JSON file from discover")
 	previousPath := flags.String("previous", "", "prior tech-radar Markdown, HTML or JSON export")
 	name := flags.String("name", "", "repository display name")
+	model := flags.String("model", "", "recommendation or lifecycle (inherits policy or previous report)")
 	format := flags.String("format", "", "markdown, html or json (default markdown; scan defaults to json)")
 	out := flags.String("out", "-", "output file, or - for stdout")
 	force := flags.Bool("force", false, "replace an unedited generated report")
@@ -132,16 +133,6 @@ func run(args []string, stdout, stderr io.Writer) (exitCode int) {
 			return fail(err)
 		}
 	}
-	if *policyPath != "" {
-		b, err := readInput(*policyPath)
-		if err != nil {
-			return fail(err)
-		}
-		policy, err = radar.ReadPolicy(b)
-		if err != nil {
-			return fail(err)
-		}
-	}
 	var previous *radar.Report
 	if *previousPath != "" {
 		report, err := readPrevious(*previousPath)
@@ -149,6 +140,20 @@ func run(args []string, stdout, stderr io.Writer) (exitCode int) {
 			return fail(err)
 		}
 		previous = &report
+	}
+	if *policyPath != "" {
+		b, err := readInput(*policyPath)
+		if err != nil {
+			return fail(err)
+		}
+		fallback := radar.Model(*model)
+		if fallback == "" && previous != nil {
+			fallback = previous.Model
+		}
+		policy, err = radar.ReadPolicyForModel(b, fallback)
+		if err != nil {
+			return fail(err)
+		}
 	}
 	if previous != nil && previous.Source.RulesFingerprint != "" && *rulesPath == "" {
 		return fail(fmt.Errorf("previous report used custom rules; pass --rules again, or an empty patterns array to remove them"))
@@ -176,7 +181,7 @@ func run(args []string, stdout, stderr io.Writer) (exitCode int) {
 	if err != nil {
 		return fail(err)
 	}
-	report, err := radar.BuildWithGrouping(inv, policy, previous, *name, grouping)
+	report, err := radar.BuildWithOptions(inv, policy, previous, *name, radar.BuildOptions{Model: radar.Model(*model), Grouping: grouping})
 	if err != nil {
 		return fail(err)
 	}
