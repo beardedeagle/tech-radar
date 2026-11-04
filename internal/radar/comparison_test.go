@@ -122,3 +122,68 @@ func TestRadarComparisonHandlesNewEntriesAndMissingHistory(t *testing.T) {
 		}
 	}
 }
+
+func TestCompactHistoricalLifecycleRingDoesNotInventRecommendationHistory(t *testing.T) {
+	root := t.TempDir()
+	fixture(t, root, "package.json", `{"dependencies":{"react":"19.0.0"}}`)
+	inv := scanTestRepository(t, root, ScanOptions{})
+	lifecycle := buildTestReport(t, inv, Policy{Model: LifecycleModel, Rules: map[string]Decision{
+		"react": {Ring: "Trial", Scope: "UI", Rationale: "Lifecycle record"},
+	}}, nil, "Demo", BuildOptions{})
+	recommendation := buildTestReport(t, inv, Policy{}, &lifecycle, "", BuildOptions{Model: RecommendationModel})
+	// The full JSON is the evidence companion; the compact snapshot is all that
+	// remains available when that companion is missing.
+	companion := readTestReport(t, renderTestExport(t, recommendation, "json", false))
+	compact := readTestReport(t, renderTestExport(t, recommendation, "html", true))
+	raw := finding(t, Inventory{Findings: compact.Findings}, "react")
+	if raw.Decision.Model != LifecycleModel || raw.Decision.Ring != "Trial" || raw.Decision.Lifecycle != "" || raw.Proposal != nil {
+		t.Fatalf("compact fixture did not retain ring-only lifecycle history: %#v", raw)
+	}
+	if known := finding(t, Inventory{Findings: companion.Findings}, "react"); known.Proposal == nil || known.Proposal.Ring != "Assess" {
+		t.Fatalf("companion lost the known recommendation: %#v", known)
+	}
+
+	fixture(t, root, "package.json", `{"dependencies":{"react":"19.1.0"}}`)
+	changed := scanTestRepository(t, root, ScanOptions{})
+	for _, tt := range []struct {
+		name     string
+		previous Report
+		knownRaw bool
+	}{
+		{"companion present", companion, true},
+		{"companion missing", compact, false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			next := buildTestReport(t, changed, Policy{}, &tt.previous, "", BuildOptions{})
+			f := finding(t, Inventory{Findings: next.Findings}, "react")
+			if !f.EvidenceChanged || f.Proposal == nil || f.Proposal.Ring != "Assess" {
+				t.Fatalf("fixture did not recompute recommendation after real evidence change: %#v", f)
+			}
+			want := &PlacementChange{Kind: "unchanged", PreviousRing: "Assess", PreviousQuadrant: "Languages & Frameworks"}
+			if tt.knownRaw {
+				if !reflect.DeepEqual(f.PlacementChange, want) {
+					t.Fatalf("known raw placement changed: %+v", f.PlacementChange)
+				}
+			} else if f.PlacementChange != nil {
+				t.Fatalf("missing raw recommendation invented movement: %+v", f.PlacementChange)
+			}
+			highlight := finding(t, Inventory{Findings: next.Highlights}, "react")
+			if !reflect.DeepEqual(highlight.PlacementChange, want) {
+				t.Fatalf("retained highlight lost known Assess history: %+v", highlight.PlacementChange)
+			}
+		})
+	}
+}
+
+func TestRecommendationRingHistoryRemainsAvailable(t *testing.T) {
+	for _, origin := range []Model{"", RecommendationModel} {
+		t.Run(string(origin), func(t *testing.T) {
+			previous := Finding{Quadrant: "Languages & Frameworks", Decision: Decision{Model: origin, Ring: "Trial"}}
+			current := Finding{Quadrant: previous.Quadrant, Proposal: &Decision{Ring: "Assess"}}
+			want := &PlacementChange{Kind: "moved-out", PreviousRing: "Trial", PreviousQuadrant: previous.Quadrant}
+			if got := placementChange(RecommendationModel, current, previous, true); !reflect.DeepEqual(got, want) {
+				t.Fatalf("active recommendation ring lost history: %+v", got)
+			}
+		})
+	}
+}

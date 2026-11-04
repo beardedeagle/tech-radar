@@ -159,7 +159,9 @@ func placementChange(model Model, current, previous Finding, exists bool) *Place
 	if !exists {
 		return &PlacementChange{Kind: "new"}
 	}
-	if model != LifecycleModel && previous.Decision.Ring == "" && previous.Proposal == nil {
+	// A historical lifecycle ring cannot recover a missing recommendation proposal.
+	if model != LifecycleModel && previous.Proposal == nil &&
+		(model.decisionModel(previous.Decision) != RecommendationModel || previous.Decision.Ring == "") {
 		return nil
 	}
 	before, after := model.ring(previous), model.ring(current)
