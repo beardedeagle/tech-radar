@@ -140,7 +140,7 @@ func markdownDecisionTable(b *strings.Builder, r Report, concise bool) {
 			}
 			var evidence []string
 			for _, member := range tableMembers(byID, f) {
-				note := tableText(member.ID)
+				note := tableText(member.ID) + "<br>" + tableText(placementNote(member))
 				if !concise {
 					for _, e := range member.Evidence {
 						note += fmt.Sprintf("<br>%s:%d, %s: %s", tableText(e.Path), e.Line, tableText(e.Kind), tableText(e.Detail))
@@ -308,6 +308,7 @@ const decisionTableHTML = `
                   {{range members .}}
                     <p>
                       <strong>{{.Name}}</strong> <code>{{.ID}}</code> · {{.EvidenceCount}} references
+                      <br>{{placementNote .}}
                       {{if eq .Presence "not detected"}}
                         · not detected; evidence is from the previous report
                       {{end}}

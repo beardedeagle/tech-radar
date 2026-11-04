@@ -10,7 +10,7 @@ import (
 // that missing history must not be described as an unchanged placement.
 func comparePlacements(r *Report, previous *Report) {
 	prior, highlights := map[string]Finding{}, map[string]Finding{}
-	families := map[string]Finding{}
+	families := map[string][]Finding{}
 	if previous != nil {
 		for _, f := range previous.Findings {
 			prior[f.ID] = f
@@ -18,7 +18,8 @@ func comparePlacements(r *Report, previous *Report) {
 		for _, f := range previous.Highlights {
 			highlights[f.ID] = f
 			if f.FamilyID != "" {
-				families[familyIdentity(f)] = f
+				key := familyIdentity(f)
+				families[key] = append(families[key], f)
 			}
 		}
 	}
@@ -47,6 +48,12 @@ func comparePlacements(r *Report, previous *Report) {
 		return
 	}
 	replay := previous != nil && samePlacementInputs(*r, *previous, prior, highlights)
+	// Split lifecycle members have no family metadata of their own. Their
+	// repository evidence must still place them in the previous group's component.
+	memberComponents := map[string]string{}
+	if r.Model == LifecycleModel {
+		memberComponents = componentOwners(findingsByID(*r))
+	}
 	for i := range r.Findings {
 		f := &r.Findings[i]
 		f.PlacementChange = nil
@@ -68,14 +75,17 @@ func comparePlacements(r *Report, previous *Report) {
 		}
 		if replay {
 			f.PlacementChange = copyPlacementChange(highlights[f.ID].PlacementChange)
-		} else if old, exists := families[familyIdentity(*f)]; f.FamilyID != "" && exists {
-			f.PlacementChange = placementChange(r.Model, *f, old, true)
 		} else if old, exists := highlights[f.ID]; exists && compatibleFamily(*f, old) {
 			f.PlacementChange = placementChange(r.Model, *f, old, true)
+		} else if family := families[familyIdentity(*f)]; f.FamilyID != "" && len(family) == 1 {
+			f.PlacementChange = placementChange(r.Model, *f, family[0], true)
 		} else if len(previous.Highlights) > 0 {
 			var matches []Finding
 			for _, old := range previous.Highlights {
 				if !compatibleFamily(*f, old) {
+					continue
+				}
+				if r.Model == LifecycleModel && f.FamilyID == "" && len(f.Members) == 1 && old.GroupComponent != "" && memberComponents[f.ID] != old.GroupComponent {
 					continue
 				}
 				for _, member := range f.Members {
@@ -85,10 +95,10 @@ func comparePlacements(r *Report, previous *Report) {
 					}
 				}
 			}
-			if len(f.Members) > 1 && len(matches) == 1 {
-				// Adding a service can change a family's representative ID.
+			if len(matches) == 1 && (len(f.Members) > 1 || r.Model == LifecycleModel) {
+				// A family can change representatives or split an existing member.
 				f.PlacementChange = placementChange(r.Model, *f, matches[0], true)
-			} else if len(matches) == 0 || len(f.Members) == 1 {
+			} else if (len(matches) == 0 && len(families[familyIdentity(*f)]) == 0) || (len(f.Members) == 1 && r.Model != LifecycleModel) {
 				f.PlacementChange = &PlacementChange{Kind: "new"}
 			}
 		} else if old, exists := prior[f.ID]; !exists {
@@ -99,10 +109,10 @@ func comparePlacements(r *Report, previous *Report) {
 	}
 }
 
-// Repeating a report version keeps its original comparison, including badges.
-// Otherwise an unchanged regeneration would create a diff or erase movement.
+// Repeating placement inputs keeps the original comparison, including badges.
+// Baseline and review-only transitions do not change placement history.
 func samePlacementInputs(current, previous Report, prior, highlights map[string]Finding) bool {
-	if current.Model.effective() != previous.Model.effective() || current.Baseline != previous.Baseline || current.Source != previous.Source || current.Repository != previous.Repository ||
+	if current.Model.effective() != previous.Model.effective() || current.Source != previous.Source || current.Repository != previous.Repository ||
 		current.GeneratorVersion != previous.GeneratorVersion || current.RuleVersion != previous.RuleVersion ||
 		len(current.Findings) != len(previous.Findings) || !reflect.DeepEqual(current.Decisions, previous.Decisions) ||
 		!reflect.DeepEqual(current.Warnings, previous.Warnings) {
@@ -112,7 +122,7 @@ func samePlacementInputs(current, previous Report, prior, highlights map[string]
 		old, exists := prior[f.ID]
 		if !exists || f.Name != old.Name || f.Quadrant != old.Quadrant || f.Presence != old.Presence ||
 			f.EvidenceFingerprint != old.EvidenceFingerprint || f.EvidenceCount != old.EvidenceCount ||
-			f.MissingDecisionMaterial != old.MissingDecisionMaterial || f.EvidenceChanged != old.EvidenceChanged || f.ReviewRequired != old.ReviewRequired ||
+			f.EvidenceChanged != old.EvidenceChanged ||
 			(old.Proposal != nil && current.Model.ring(f) != current.Model.ring(old)) ||
 			(old.Assessment != nil && !reflect.DeepEqual(f.Assessment, old.Assessment)) {
 			return false

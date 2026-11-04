@@ -98,7 +98,10 @@ func TestDecisionTableGroupsMembersAndEscapesSuppliedText(t *testing.T) {
 	fixture(t, root, "package.json", `{"dependencies":{"react":"19","@radix-ui/react-dialog":"1","unrecognized-helper":"1"}}`)
 	inv := scanTestRepository(t, root, ScanOptions{})
 	d := Decision{Lifecycle: "Hold", Scope: "UI | <scope>", Rationale: "Review [link](javascript:alert(1))", Owner: "UI <team>", Status: "approved", Reference: "docs/<script>decision</script>|record", Reviewed: "2026-11-03"}
-	r := buildTestReport(t, inv, Policy{Model: LifecycleModel, Rules: map[string]Decision{"react": d, "npm:@radix-ui/react-dialog": d}}, nil, "Example", BuildOptions{})
+	retiring := d
+	retiring.Lifecycle = "Retire"
+	prior := buildTestReport(t, inv, Policy{Model: LifecycleModel, Rules: map[string]Decision{"react": d, "npm:@radix-ui/react-dialog": retiring}}, nil, "Example", BuildOptions{})
+	r := buildTestReport(t, inv, Policy{Model: LifecycleModel, Rules: map[string]Decision{"react": d, "npm:@radix-ui/react-dialog": d}}, &prior, "Example", BuildOptions{})
 	groups := decisionGroups(r, false)
 	count := 0
 	for _, group := range groups {
@@ -118,6 +121,13 @@ func TestDecisionTableGroupsMembersAndEscapesSuppliedText(t *testing.T) {
 		for _, compact := range []bool{false, true} {
 			data := renderTestExport(t, r, format, compact)
 			body := strings.SplitN(string(data), snapshotStart, 2)[0]
+			memberNote := "npm:@radix-ui/react-dialog<br>Moved inward from Retire"
+			if format == "html" {
+				memberNote = "<br>Moved inward from Retire"
+			}
+			if !strings.Contains(body, memberNote) || !strings.Contains(body, "Placement unchanged") {
+				t.Fatalf("%s compact=%v hid member movement behind unchanged family placement", format, compact)
+			}
 			for _, value := range []string{"Hold", "2026-11-03", "npm:@radix-ui/react-dialog", "Needs decision"} {
 				if !strings.Contains(body, value) {
 					t.Fatalf("%s compact=%v omitted %s", format, compact, value)
