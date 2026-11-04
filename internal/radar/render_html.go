@@ -33,10 +33,9 @@ func renderHTML(r Report) ([]byte, error) {
 
 func renderHTMLView(r Report, concise bool, evidenceFile string) ([]byte, error) {
 	v := htmlView{Report: r, Table: r.selectedView() == TableView, Coverage: coverage, Boundaries: boundaries, Concise: concise, EvidenceFile: evidenceFile, RawCount: len(r.Findings)}
-	var byID map[string]Finding
+	byID := findingsByID(r)
 	if v.Table {
 		v.Groups = decisionGroups(r)
-		byID = findingsByID(r)
 	}
 	for _, f := range r.Findings {
 		if f.Assessment != nil && f.Assessment.Significance == "unknown" {
@@ -49,10 +48,8 @@ func renderHTMLView(r Report, concise bool, evidenceFile string) ([]byte, error)
 			v.Missing++
 		}
 	}
-	if concise || v.Table {
-		r.Findings = r.Highlights
-		v.Report = r
-	}
+	r.Findings = r.Highlights
+	v.Report = r
 	if !v.Table {
 		colors := []string{"#00635e", "#2853a5", "#965117", "#7d4190"}
 		symbolColors := []string{"var(--techniques)", "var(--platforms)", "var(--tools)", "var(--languages)"}
@@ -414,11 +411,14 @@ footer {
               {{end}}</p>
             {{end}}
           {{else}}
+            {{range members .}}
+            <p><code>{{.ID}}</code></p>
             <ul>
               {{range .Evidence}}<li><code>{{.Path}}:{{.Line}}</code><br>{{.Kind}}: {{.Detail}}</li>
               {{else}}<li>Added by policy; no repository evidence was found.</li>
               {{end}}
             </ul>
+            {{end}}
           {{end}}
         </section>
       {{end}}

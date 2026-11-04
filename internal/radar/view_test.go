@@ -158,7 +158,7 @@ func TestDecisionTableGroupsMembersAndEscapesSuppliedText(t *testing.T) {
 	}
 }
 
-func TestDecisionTableKeepsGroupedMainFindings(t *testing.T) {
+func TestViewsKeepGroupedMainFindings(t *testing.T) {
 	root := t.TempDir()
 	fixture(t, root, "package.json", `{"dependencies":{"react":"19","@radix-ui/react-dialog":"1","unrecognized-helper":"1"}}`)
 	inv := scanTestRepository(t, root, ScanOptions{})
@@ -168,27 +168,39 @@ func TestDecisionTableKeepsGroupedMainFindings(t *testing.T) {
 			if len(r.Highlights) != 1 || r.Highlights[0].ID != "react" || !reflect.DeepEqual(r.Highlights[0].Members, []string{"npm:@radix-ui/react-dialog", "react"}) {
 				t.Fatalf("summary must contain one React family: %+v", r.Highlights)
 			}
-			for _, format := range []string{"html", "markdown"} {
-				for _, compact := range []bool{false, true} {
-					data := renderTestExport(t, r, format, compact)
-					body := strings.SplitN(string(data), snapshotStart, 2)[0]
-					if strings.Contains(body, "unrecognized-helper") {
-						t.Fatalf("%s compact=%v promoted a supporting dependency to a table row", format, compact)
-					}
-					header := "1 entries"
-					if format == "markdown" && compact {
-						header = "1 main findings"
-					}
-					if !strings.Contains(body, header) {
-						t.Fatalf("%s compact=%v header must count grouped rows", format, compact)
-					}
-					if model == LifecycleModel && !strings.Contains(body, "Needs decision") {
-						t.Fatal("unplaced family lost its pending lifecycle state")
-					}
-					recovered := readTestReport(t, data)
-					helper := finding(t, Inventory{Findings: recovered.Findings}, "npm:unrecognized-helper")
-					if len(recovered.Findings) != 3 || helper.EvidenceCount != 1 || (!compact && len(helper.Evidence) != 1) {
-						t.Fatal("summary discarded the supporting dependency's saved evidence")
+			for _, view := range []View{RadarView, TableView} {
+				r.View = view
+				for _, format := range []string{"html", "markdown"} {
+					for _, compact := range []bool{false, true} {
+						t.Run(fmt.Sprintf("%s/%s/compact=%v", view, format, compact), func(t *testing.T) {
+							data := renderTestExport(t, r, format, compact)
+							body := strings.SplitN(string(data), snapshotStart, 2)[0]
+							if strings.Contains(body, "unrecognized-helper") {
+								t.Fatal("view promoted a supporting dependency to a standalone entry")
+							}
+							header := "1 entries"
+							if format == "markdown" && compact {
+								header = "1 main findings"
+							}
+							if !strings.Contains(body, header) {
+								t.Fatalf("%s compact=%v header must count grouped rows", format, compact)
+							}
+							if model == LifecycleModel && !strings.Contains(body, "Needs decision") {
+								t.Fatal("unplaced family lost its pending lifecycle state")
+							}
+							member := finding(t, inv, "npm:@radix-ui/react-dialog")
+							if !strings.Contains(body, member.ID) || (!compact && !strings.Contains(html.UnescapeString(body), member.Evidence[0].Detail)) {
+								t.Fatal("grouped choice lost its member identity or source evidence")
+							}
+							recovered := readTestReport(t, data)
+							helper := finding(t, Inventory{Findings: recovered.Findings}, "npm:unrecognized-helper")
+							if len(recovered.Findings) != 3 || helper.EvidenceCount != 1 || (!compact && len(helper.Evidence) != 1) {
+								t.Fatal("summary discarded the supporting dependency's saved evidence")
+							}
+							if !compact && !reflect.DeepEqual(recovered.Findings, r.Findings) {
+								t.Fatal("view changed the full saved findings")
+							}
+						})
 					}
 				}
 			}
