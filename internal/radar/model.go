@@ -40,7 +40,7 @@ type LanguageStat struct {
 }
 
 type Decision struct {
-	// Model records the source semantics when a decision crosses report models.
+	// Model preserves source semantics across model switches and legacy defaults.
 	Model     Model  `json:"model,omitempty"`
 	Name      string `json:"name,omitempty"`
 	Quadrant  string `json:"quadrant,omitempty"`

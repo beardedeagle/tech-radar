@@ -199,6 +199,10 @@ func BuildWithOptions(inv Inventory, policy Policy, previous *Report, name strin
 				d.Lifecycle = canonical
 			}
 		}
+		// Fresh policy entries have a known origin even when legacy defaults differ.
+		if model.decisionModel(d) != model {
+			d.Model = model
+		}
 		if (d.Ring != "" || (model == LifecycleModel && canonicalLifecycle(d.Lifecycle) != "")) && d.Status == "" {
 			d.Status = "proposed"
 		}

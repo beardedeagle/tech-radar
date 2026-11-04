@@ -200,3 +200,35 @@ func TestLifecycleGroupingKeepsDistinctDecisionOrigins(t *testing.T) {
 	}
 	readTestReport(t, renderTestExport(t, r, "json", false))
 }
+
+func TestSuppliedLifecycleRingOnlyDecisionKeepsOrigin(t *testing.T) {
+	inv := capturedFixture(t, "web", "package.json", `{"dependencies":{"react":"19.0.0"}}`).Inventory
+	policy, err := ReadPolicyForModel([]byte(`{"schema_version":1,"model":"lifecycle","rules":{"react":{"ring":"Trial","scope":"UI","rationale":"Lifecycle policy supplied record"}}}`), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := buildTestReport(t, inv, Policy{Rules: map[string]Decision{"react": {Ring: "Adopt", Lifecycle: "Retire", Scope: "old scope", Rationale: "old approval", Status: "approved", Owner: "old owner", Reference: "DEC-old", Reviewed: "2026-11-01"}}}, nil, "", BuildOptions{})
+	for _, previous := range []*Report{nil, &old} {
+		t.Run(fmt.Sprintf("replacement=%t", previous != nil), func(t *testing.T) {
+			r := buildTestReport(t, inv, policy, previous, "", BuildOptions{})
+			want := policy.Rules["react"]
+			want.Model, want.Status = LifecycleModel, "proposed"
+			f := finding(t, Inventory{Findings: r.Findings}, "react")
+			if f.Decision != want || r.Model.ring(f) != "Needs decision" || len(r.Model.historicalDecision(f)) != 0 || r.Baseline != (previous == nil) {
+				t.Fatalf("fresh policy lost selected lifecycle origin: %#v", f)
+			}
+			prior := readTestReport(t, renderTestExport(t, r, "json", false))
+			next := buildTestReport(t, inv, Policy{}, &prior, "", BuildOptions{Model: RecommendationModel})
+			f = finding(t, Inventory{Findings: next.Findings}, "react")
+			if f.Decision != want || f.Proposal == nil || next.Model.ring(f) != "Assess" || next.Model.displayDecision(f).Status != "suggested" {
+				t.Fatalf("lifecycle ring supplied active recommendation authority: %#v", f)
+			}
+			body := strings.SplitN(string(renderTestExport(t, next, "markdown", false)), snapshotStart, 2)[0]
+			for _, text := range []string{"**Ring:** Assess", "**Decision:** suggested", "Suggested rationale", "Historical decision model:** lifecycle", "Historical ring:** Trial", "Historical rationale:** Lifecycle policy supplied record"} {
+				if !strings.Contains(body, text) {
+					t.Fatalf("switched document omitted %q", text)
+				}
+			}
+		})
+	}
+}

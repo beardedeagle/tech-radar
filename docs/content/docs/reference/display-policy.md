@@ -40,7 +40,7 @@ The approval fields above are illustrative. Real approval records identify the a
 
 | Field | Meaning |
 | --- | --- |
-| `model` | Optional source model, `recommendation` or `lifecycle`. A policy decision must match the selected report model. Saved decisions record it when carried across models. |
+| `model` | Optional source model, `recommendation` or `lifecycle`. A policy decision must match the selected report model. Saved decisions record it when carried across models or when legacy defaults would resolve differently. |
 | `name` | Optional display name. Required with a quadrant for a new manual ID unknown to the catalog. |
 | `quadrant` | `Techniques`, `Platforms`, `Tools`, or `Languages & Frameworks`. |
 | `ring` | Recommendation placement, `Adopt`, `Trial`, `Assess`, or `Caution`. Lifecycle placement uses `lifecycle`. |
