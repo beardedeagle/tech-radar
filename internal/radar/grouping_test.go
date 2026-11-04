@@ -2,6 +2,8 @@ package radar
 
 import (
 	"encoding/json"
+	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -20,14 +22,8 @@ func TestGenericGroupingCatalogWorksAcrossEcosystems(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			root := t.TempDir()
 			fixture(t, root, tt.manifest, tt.content)
-			inv, err := Scan(root)
-			if err != nil {
-				t.Fatal(err)
-			}
-			r, err := Build(inv, Policy{}, nil, "Example")
-			if err != nil {
-				t.Fatal(err)
-			}
+			inv := scanTestRepository(t, root, ScanOptions{})
+			r := buildTestReport(t, inv, Policy{}, nil, "Example", BuildOptions{})
 			var group *Finding
 			for i := range r.Highlights {
 				if r.Highlights[i].Name == tt.family {
@@ -53,14 +49,8 @@ func TestGroupingKeepsDifferentComponentsAndDecisionsSeparate(t *testing.T) {
 	root := t.TempDir()
 	fixture(t, root, "package.json", `{"dependencies":{"react":"19"}}`)
 	fixture(t, root, "packages/widgets/package.json", `{"dependencies":{"@radix-ui/react-dialog":"1"}}`)
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	r, err := Build(inv, Policy{}, nil, "Example")
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
+	r := buildTestReport(t, inv, Policy{}, nil, "Example", BuildOptions{})
 	for _, id := range []string{"react", "npm:@radix-ui/react-dialog"} {
 		if len(finding(t, inv, id).Evidence) == 0 {
 			t.Fatalf("component lost evidence: %s", id)
@@ -71,15 +61,9 @@ func TestGroupingKeepsDifferentComponentsAndDecisionsSeparate(t *testing.T) {
 		t.Fatal("grouping lost the parent or merged separate components")
 	}
 	fixture(t, root, "package.json", `{"dependencies":{"react":"19","@radix-ui/react-dialog":"1"}}`)
-	inv, err = Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv = scanTestRepository(t, root, ScanOptions{})
 	d := Decision{Status: "proposed", Name: "Dialog UI", Quadrant: "Languages & Frameworks", Ring: "Caution", Scope: "Dialogs", Rationale: "Migration required"}
-	r, err = Build(inv, Policy{Rules: map[string]Decision{"npm:@radix-ui/react-dialog": d}}, nil, "Example")
-	if err != nil {
-		t.Fatal(err)
-	}
+	r = buildTestReport(t, inv, Policy{Rules: map[string]Decision{"npm:@radix-ui/react-dialog": d}}, nil, "Example", BuildOptions{})
 	react := finding(t, Inventory{Findings: r.Highlights}, "react")
 	dialog := finding(t, Inventory{Findings: r.Highlights}, "npm:@radix-ui/react-dialog")
 	if contains(react.Members, dialog.ID) || dialog.Decision != d {
@@ -132,14 +116,8 @@ func TestGroupingValidationAndCanonicalInputs(t *testing.T) {
 func TestGroupingUsesRuntimeMemberWhenRepresentativeIsDevelopmentOnly(t *testing.T) {
 	root := t.TempDir()
 	fixture(t, root, "pyproject.toml", "[project]\ndependencies = [\"djangorestframework>=3\"]\n[project.optional-dependencies]\ntest = [\"django>=5\"]\n")
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	report, err := Build(inv, Policy{}, nil, "Example")
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
+	report := buildTestReport(t, inv, Policy{}, nil, "Example", BuildOptions{})
 	for _, f := range report.Highlights {
 		if f.FamilyID == "django" {
 			return
@@ -149,11 +127,27 @@ func TestGroupingUsesRuntimeMemberWhenRepresentativeIsDevelopmentOnly(t *testing
 }
 
 func TestGroupingRulesAreSafeForConcurrentRuns(t *testing.T) {
-	for range 12 {
-		t.Run("parallel", func(t *testing.T) {
+	root := t.TempDir()
+	fixture(t, root, "package.json", `{"dependencies":{"react":"19","@radix-ui/react-dialog":"1"}}`)
+	inv := scanTestRepository(t, root, ScanOptions{})
+	baseline := buildTestReport(t, inv, Policy{}, nil, "Example", BuildOptions{})
+	for _, name := range []string{"First UI", "Second UI", "Third UI"} {
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			if _, err := ReadGroupingRules([]byte(`{"schema_version":1,"families":[]}`)); err != nil {
-				t.Fatal(err)
+			for range 4 {
+				grouping, err := ReadGroupingRules([]byte(fmt.Sprintf(`{"schema_version":1,"families":[{"id":"react","name":%q,"quadrant":"Languages & Frameworks","significance":"system_defining","relationship":"framework_extensions","scope":"component","members":["react","npm:@radix-ui/react-dialog"]}]}`, name)))
+				if err != nil {
+					t.Fatal(err)
+				}
+				r := buildTestReport(t, inv, Policy{}, nil, "Example", BuildOptions{Grouping: grouping})
+				f := finding(t, Inventory{Findings: r.Highlights}, "react")
+				if f.Name != name || !contains(f.Members, "npm:@radix-ui/react-dialog") {
+					t.Fatalf("grouping override leaked or lost members: %#v", f)
+				}
+				defaults := buildTestReport(t, inv, Policy{}, nil, "Example", BuildOptions{})
+				if !reflect.DeepEqual(defaults, baseline) {
+					t.Fatal("override mutated built-in grouping")
+				}
 			}
 		})
 	}
@@ -162,19 +156,13 @@ func TestGroupingRulesAreSafeForConcurrentRuns(t *testing.T) {
 func TestNewAliasRecognitionPreservesSavedPackageIDs(t *testing.T) {
 	root := t.TempDir()
 	fixture(t, root, "package.json", `{"dependencies":{"prisma":"6","@prisma/client":"6","react-native":"1"}}`)
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
 	old := Report{SchemaVersion: 2, GeneratorVersion: Version, Source: inv.Source, Repository: "Example", Decisions: map[string]Decision{}, Findings: []Finding{
 		{ID: "npm:prisma", Name: "npm:prisma", Presence: "detected", Number: 1},
 		{ID: "npm:@prisma/client", Name: "npm:@prisma/client", Presence: "detected", Number: 2},
 		{ID: "npm:react-native", Name: "npm:react-native", Presence: "detected", Number: 3},
 	}}
-	r, err := Build(inv, Policy{}, &old, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	r := buildTestReport(t, inv, Policy{}, &old, "", BuildOptions{})
 	for _, id := range []string{"npm:prisma", "npm:@prisma/client", "npm:react-native"} {
 		found := false
 		for _, f := range r.Findings {
@@ -191,10 +179,7 @@ func TestNewAliasRecognitionPreservesSavedPackageIDs(t *testing.T) {
 			t.Fatalf("duplicate canonical ID: %s", f.ID)
 		}
 	}
-	next, err := Build(inv, Policy{}, &r, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	next := buildTestReport(t, inv, Policy{}, &r, "", BuildOptions{})
 	a, _ := Render(r, "json")
 	b, _ := Render(next, "json")
 	if string(a) != string(b) {
@@ -205,15 +190,9 @@ func TestNewAliasRecognitionPreservesSavedPackageIDs(t *testing.T) {
 func TestLegacyAliasesStillDetectRemovedPackages(t *testing.T) {
 	root := t.TempDir()
 	fixture(t, root, "package.json", `{"dependencies":{"@prisma/client":"6"}}`)
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
 	old := Report{SchemaVersion: 2, GeneratorVersion: Version, Source: inv.Source, Decisions: map[string]Decision{}, Findings: []Finding{{ID: "npm:prisma", Name: "npm:prisma", Presence: "detected", Number: 1}, {ID: "npm:@prisma/client", Name: "npm:@prisma/client", Presence: "detected", Number: 2}}}
-	report, err := Build(inv, Policy{}, &old, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	report := buildTestReport(t, inv, Policy{}, &old, "", BuildOptions{})
 	if finding(t, Inventory{Findings: report.Findings}, "npm:prisma").Presence != "not detected" {
 		t.Fatal("removed alias still detected through another alias")
 	}
@@ -222,17 +201,11 @@ func TestLegacyAliasesStillDetectRemovedPackages(t *testing.T) {
 func TestAliasRecognitionKeepsExclusionsAndDecisions(t *testing.T) {
 	root := t.TempDir()
 	fixture(t, root, "package.json", `{"dependencies":{"react-native":"1","prisma":"6"}}`)
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
 	exclusion := Decision{Exclude: true, Rationale: "Reviewed separately"}
 	decision := Decision{Ring: "Caution", Status: "proposed", Scope: "Mobile client", Rationale: "Migration planned"}
 	old := Report{SchemaVersion: 2, GeneratorVersion: Version, Source: inv.Source, Decisions: map[string]Decision{"npm:prisma": exclusion, "npm:react-native": decision}, Findings: []Finding{{ID: "npm:react-native", Name: "npm:react-native", Presence: "detected", Number: 1, Decision: decision}}, Excluded: []string{"npm:prisma"}, ExcludedFindings: []Finding{{ID: "npm:prisma", Name: "npm:prisma", Presence: "detected", Decision: exclusion}}}
-	r, err := Build(inv, Policy{}, &old, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	r := buildTestReport(t, inv, Policy{}, &old, "", BuildOptions{})
 	if !contains(r.Excluded, "npm:prisma") || len(r.ExcludedFindings) != 1 || r.ExcludedFindings[0].Presence != "detected" {
 		t.Fatal("alias lost exclusion")
 	}
@@ -260,15 +233,9 @@ func TestGroupingRejectsAliasOwnershipConflicts(t *testing.T) {
 func TestLegacyAliasUpdateKeepsNewPackageEvidence(t *testing.T) {
 	root := t.TempDir()
 	fixture(t, root, "package.json", `{"dependencies":{"prisma":"6","@prisma/client":"6"}}`)
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
 	old := Report{SchemaVersion: 2, GeneratorVersion: Version, Source: inv.Source, Decisions: map[string]Decision{}, Findings: []Finding{{ID: "npm:prisma", Name: "npm:prisma", Presence: "detected", Number: 1}}}
-	r, err := Build(inv, Policy{}, &old, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	r := buildTestReport(t, inv, Policy{}, &old, "", BuildOptions{})
 	found := false
 	for _, f := range r.Findings {
 		for _, e := range f.Evidence {
@@ -284,14 +251,8 @@ func TestRawPackagePolicyWorksWithoutPreviousReport(t *testing.T) {
 	for _, decision := range []Decision{{Exclude: true, Rationale: "Reviewed separately"}, {Ring: "Caution", Status: "proposed", Scope: "Mobile", Rationale: "Migration planned"}} {
 		root := t.TempDir()
 		fixture(t, root, "package.json", `{"dependencies":{"react-native":"1"}}`)
-		inv, err := Scan(root)
-		if err != nil {
-			t.Fatal(err)
-		}
-		r, err := Build(inv, Policy{Rules: map[string]Decision{"npm:react-native": decision}}, nil, "Example")
-		if err != nil {
-			t.Fatal(err)
-		}
+		inv := scanTestRepository(t, root, ScanOptions{})
+		r := buildTestReport(t, inv, Policy{Rules: map[string]Decision{"npm:react-native": decision}}, nil, "Example", BuildOptions{})
 		if decision.Exclude {
 			if !contains(r.Excluded, "npm:react-native") || len(r.Highlights) != 0 {
 				t.Fatal("raw exclusion bypassed by canonical finding")
@@ -342,14 +303,8 @@ func TestAllBuiltInFamiliesCanBeDisabled(t *testing.T) {
 	}
 	root := t.TempDir()
 	fixture(t, root, "package.json", `{"dependencies":{"react":"19","@radix-ui/react-dialog":"1"}}`)
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	r, err := BuildWithGrouping(inv, Policy{}, nil, "Example", grouping)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
+	r := buildTestReport(t, inv, Policy{}, nil, "Example", BuildOptions{Grouping: grouping})
 	for _, f := range r.Highlights {
 		if f.FamilyID != "" || len(f.Members) > 1 {
 			t.Fatal("disabled catalog fell back to built-ins")

@@ -51,14 +51,18 @@ func decisionGroups(r Report, concise bool) []tableGroup {
 	return groups
 }
 
-func tableMembers(r Report, f Finding) []Finding {
+func findingsByID(r Report) map[string]Finding {
+	byID := make(map[string]Finding, len(r.Findings))
+	for _, f := range r.Findings {
+		byID[f.ID] = f
+	}
+	return byID
+}
+
+func tableMembers(byID map[string]Finding, f Finding) []Finding {
 	ids := f.Members
 	if len(ids) == 0 {
 		ids = []string{f.ID}
-	}
-	byID := make(map[string]Finding, len(r.Findings))
-	for _, member := range r.Findings {
-		byID[member.ID] = member
 	}
 	members := make([]Finding, 0, len(ids))
 	for _, id := range ids {
@@ -111,6 +115,7 @@ func tableText(s string) string {
 
 func markdownDecisionTable(b *strings.Builder, r Report, concise bool) {
 	b.WriteString("\n## Decisions\n\n")
+	byID := findingsByID(r)
 	for _, group := range decisionGroups(r, concise) {
 		fmt.Fprintf(b, "### %s\n\n| Technology / family | State | Scope | Owner | Decision reference | Reviewed | Changes / review | Evidence / members |\n|---|---|---|---|---|---|---|---|\n", tableText(group.Quadrant))
 		for _, f := range group.Findings {
@@ -129,7 +134,7 @@ func markdownDecisionTable(b *strings.Builder, r Report, concise bool) {
 				name += "<br>Lifecycle: " + tableText(f.Decision.Lifecycle)
 			}
 			var evidence []string
-			for _, member := range tableMembers(r, f) {
+			for _, member := range tableMembers(byID, f) {
 				note := tableText(member.ID)
 				if !concise {
 					for _, e := range member.Evidence {

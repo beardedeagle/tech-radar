@@ -64,32 +64,11 @@ func ScanWithOptions(root string, options ScanOptions) (Inventory, error) {
 	return inv, err
 }
 
-func Scan(root string) (Inventory, error) {
-	return ScanWithRules(root, DetectionRules{})
-}
-
-// ScanWithRules scans the repo with additional detection patterns.
-// The rules file is excluded, even if it's inside the repo.
-// Filesystem errors include the path that couldn't be read.
-func ScanWithRules(root string, rules DetectionRules) (Inventory, error) {
-	inv, _, err := scanRepository(root, rules, false, Context{})
-	return inv, err
-}
-
 // CaptureRepository collects findings and file hashes for discovery.
 // It reads eligible files inside the repo and omits absolute paths and raw values.
 // ignored holds SHA-256 digests of explicit runtime inputs to omit from capture.
 func CaptureRepository(root string, rules DetectionRules, ignored ...[32]byte) (Inventory, []FileHash, error) {
 	return scanRepository(root, rules, true, Context{}, ignored...)
-}
-
-// ScanWithContext scans the repo using a validated shared checklist.
-func ScanWithContext(root string, rules DetectionRules, pack Context) (Inventory, error) {
-	if pack.fingerprint == "" {
-		return Inventory{}, fmt.Errorf("context is not validated")
-	}
-	inv, _, err := scanRepository(root, rules, true, pack)
-	return inv, err
 }
 
 func scanRepository(root string, rules DetectionRules, extended bool, pack Context, ignored ...[32]byte) (Inventory, []FileHash, error) {

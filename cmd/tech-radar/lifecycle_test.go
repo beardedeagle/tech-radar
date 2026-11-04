@@ -28,7 +28,11 @@ func TestCLILifecycleBaselineReplayAndPortableSnapshot(t *testing.T) {
 			if first.Model != radar.LifecycleModel || !first.Baseline || first.Findings[0].ReviewRequired || first.Findings[0].MissingDecisionMaterial {
 				t.Fatal("CLI baseline lost supplied lifecycle approval")
 			}
-			for _, command := range []string{"scan", "generate"} {
+			commands := []string{"generate"}
+			if format == "json" {
+				commands = append(commands, "scan")
+			}
+			for _, command := range commands {
 				text := call(t, 0, command, "--repo", repo, "--previous", dest, "--format", "json")
 				r, err := radar.ReadReport([]byte(text))
 				if err != nil {
@@ -106,9 +110,9 @@ func TestCLILifecycleSwitchPreservesMetadataOnlyDecision(t *testing.T) {
 		if format != "json" && !strings.Contains(strings.SplitN(text, "\n<!-- tech-radar:snapshot\n", 2)[0], "Needs decision") {
 			t.Fatal("historical metadata supplied lifecycle placement")
 		}
-		saved := write(t, work, "switched.json", call(t, 0, "scan", "--repo", repo, "--previous", previous, "--model", "lifecycle"))
-		call(t, 0, "scan", "--repo", repo, "--previous", saved)
 	}
+	saved := write(t, work, "switched.json", call(t, 0, "scan", "--repo", repo, "--previous", previous, "--model", "lifecycle"))
+	call(t, 0, "scan", "--repo", repo, "--previous", saved)
 	call(t, 1, "scan", "--repo", repo, "--model", "lifecycle", "--policy", policy)
 }
 

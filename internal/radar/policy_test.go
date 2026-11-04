@@ -22,11 +22,11 @@ func TestPolicyValidation(t *testing.T) {
 		`{"schema_version":1,"rules":{}} {}`,
 	}
 	for _, input := range bad {
-		if _, err := ReadPolicy([]byte(input)); err == nil {
+		if _, err := ReadPolicyForModel([]byte(input), RecommendationModel); err == nil {
 			t.Errorf("accepted invalid policy %s", input)
 		}
 	}
-	p, err := ReadPolicy([]byte(`{"schema_version":1,"repository":"ExampleApp","rules":{"phoenix":{"ring":"Adopt","scope":"ExampleApp web","rationale":"Established application framework","owner":"Team","status":"approved","reference":"PR #1","reviewed":"2026-10-30"},"python":{"exclude":true,"rationale":"Outside the approved application stack"}}}`))
+	p, err := ReadPolicyForModel([]byte(`{"schema_version":1,"repository":"ExampleApp","rules":{"phoenix":{"ring":"Adopt","scope":"ExampleApp web","rationale":"Established application framework","owner":"Team","status":"approved","reference":"PR #1","reviewed":"2026-10-30"},"python":{"exclude":true,"rationale":"Outside the approved application stack"}}}`), RecommendationModel)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,48 +38,30 @@ func TestPolicyValidation(t *testing.T) {
 func TestPreservesDecisionsAndExclusionsAndFlagsEvidenceChanges(t *testing.T) {
 	policy := Policy{SchemaVersion: 1, Repository: "ExampleApp", Rules: map[string]Decision{"phoenix": {Ring: "Adopt", Scope: "ExampleApp", Rationale: "Existing framework", Owner: "Team", Status: "approved", Reference: "PR #1", Reviewed: "2026-10-30"}, "python": {Exclude: true, Rationale: "Team exclusion"}}}
 	inv := inventoryForTests()
-	first, err := Build(inv, policy, nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	first := buildTestReport(t, inv, policy, nil, "", BuildOptions{})
 	if len(first.Findings) != 1 || len(first.Excluded) != 1 || first.Excluded[0] != "python" {
 		t.Fatalf("exclusion lost: %#v", first)
 	}
-	next, err := Build(inv, Policy{}, &first, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	next := buildTestReport(t, inv, Policy{}, &first, "", BuildOptions{})
 	if next.Findings[0].Decision.Status != "approved" || next.Findings[0].ReviewRequired {
 		t.Fatalf("unchanged decision not preserved: %#v", next.Findings)
 	}
 	inv.Findings[0].Evidence[0].Detail = "hex package phoenix: ~> 2.0"
-	next, err = Build(inv, Policy{}, &first, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	next = buildTestReport(t, inv, Policy{}, &first, "", BuildOptions{})
 	if !next.Findings[0].EvidenceChanged || !next.Findings[0].ReviewRequired || next.Findings[0].Decision.Reference != "PR #1" {
 		t.Fatalf("changed evidence silently inherited approval: %#v", next.Findings)
 	}
 	inv.Findings = inv.Findings[1:]
-	next, err = Build(inv, Policy{}, &first, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	next = buildTestReport(t, inv, Policy{}, &first, "", BuildOptions{})
 	if len(next.Findings) != 1 || next.Findings[0].Presence != "not detected" || !next.Findings[0].ReviewRequired {
 		t.Fatalf("disappearing decision silently dropped: %#v", next.Findings)
 	}
 }
 
 func TestExplicitPolicyOverridesPriorAndAllowsManualCandidates(t *testing.T) {
-	first, err := Build(inventoryForTests(), Policy{SchemaVersion: 1, Rules: map[string]Decision{"phoenix": {Ring: "Adopt", Scope: "ExampleApp", Rationale: "First proposal"}}}, nil, "ExampleApp")
-	if err != nil {
-		t.Fatal(err)
-	}
+	first := buildTestReport(t, inventoryForTests(), Policy{SchemaVersion: 1, Rules: map[string]Decision{"phoenix": {Ring: "Adopt", Scope: "ExampleApp", Rationale: "First proposal"}}}, nil, "ExampleApp", BuildOptions{})
 	p := Policy{SchemaVersion: 1, Rules: map[string]Decision{"phoenix": {Ring: "Caution", Scope: "Existing deployments", Rationale: "New team decision"}, "custom-tool": {Name: "Custom candidate", Quadrant: "Tools", Ring: "Assess", Scope: "Investigation", Rationale: "Team proposal"}}}
-	next, err := Build(inventoryForTests(), p, &first, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	next := buildTestReport(t, inventoryForTests(), p, &first, "", BuildOptions{})
 	if finding(t, Inventory{Findings: next.Findings}, "phoenix").Decision.Ring != "Caution" {
 		t.Fatal("current rule lost")
 	}
@@ -87,7 +69,7 @@ func TestExplicitPolicyOverridesPriorAndAllowsManualCandidates(t *testing.T) {
 	if candidate.Presence != "not detected" || len(candidate.Evidence) != 0 {
 		t.Fatal("invented evidence for manual candidate")
 	}
-	_, err = Build(inventoryForTests(), Policy{SchemaVersion: 1, Rules: map[string]Decision{"phoenxi": {Ring: "Adopt", Scope: "ExampleApp", Rationale: "Typo"}}}, nil, "")
+	_, err := BuildWithOptions(inventoryForTests(), Policy{SchemaVersion: 1, Rules: map[string]Decision{"phoenxi": {Ring: "Adopt", Scope: "ExampleApp", Rationale: "Typo"}}}, nil, "", BuildOptions{})
 	if err == nil {
 		t.Fatal("unknown typo became a manual recommendation")
 	}
@@ -95,7 +77,7 @@ func TestExplicitPolicyOverridesPriorAndAllowsManualCandidates(t *testing.T) {
 
 func TestRecommendationRequiresScopeAndRationale(t *testing.T) {
 	for _, d := range []Decision{{Ring: "Adopt"}, {Ring: "Adopt", Scope: "ExampleApp"}} {
-		if _, err := Build(inventoryForTests(), Policy{SchemaVersion: 1, Rules: map[string]Decision{"phoenix": d}}, nil, ""); err == nil {
+		if _, err := BuildWithOptions(inventoryForTests(), Policy{SchemaVersion: 1, Rules: map[string]Decision{"phoenix": d}}, nil, "", BuildOptions{}); err == nil {
 			t.Fatalf("accepted unexplained recommendation %#v", d)
 		}
 	}
@@ -104,29 +86,17 @@ func TestRecommendationRequiresScopeAndRationale(t *testing.T) {
 func TestStaleApprovalStaysFlaggedUntilExplicitReview(t *testing.T) {
 	p := Policy{SchemaVersion: 1, Rules: map[string]Decision{"phoenix": {Ring: "Adopt", Scope: "ExampleApp", Rationale: "Existing framework", Owner: "Team", Status: "approved", Reference: "PR #1", Reviewed: "2026-10-30"}}}
 	inv := inventoryForTests()
-	a, err := Build(inv, p, nil, "ExampleApp")
-	if err != nil {
-		t.Fatal(err)
-	}
+	a := buildTestReport(t, inv, p, nil, "ExampleApp", BuildOptions{})
 	inv.Findings[0].Evidence[0].Detail = "hex package phoenix: ~> 2.0"
-	b, err := Build(inv, p, &a, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	c, err := Build(inv, p, &b, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	b := buildTestReport(t, inv, p, &a, "", BuildOptions{})
+	c := buildTestReport(t, inv, p, &b, "", BuildOptions{})
 	if !finding(t, Inventory{Findings: c.Findings}, "phoenix").ReviewRequired {
 		t.Fatal("rerun silently cleared a stale approval")
 	}
 	d := p.Rules["phoenix"]
 	d.Reference = "PR #2"
 	p.Rules["phoenix"] = d
-	reviewed, err := Build(inv, p, &c, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	reviewed := buildTestReport(t, inv, p, &c, "", BuildOptions{})
 	if finding(t, Inventory{Findings: reviewed.Findings}, "phoenix").ReviewRequired {
 		t.Fatal("explicit new review was not applied")
 	}

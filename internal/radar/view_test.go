@@ -24,7 +24,7 @@ func TestViewSelectionAndLegacyDefaults(t *testing.T) {
 		for _, view := range []View{RadarView, TableView} {
 			prior := first
 			prior.View = view
-			inherited, err := Build(inv, Policy{}, &prior, "")
+			inherited, err := BuildWithOptions(inv, Policy{}, &prior, "", BuildOptions{})
 			if err != nil || inherited.View != view {
 				t.Fatalf("view inheritance: %q, %v", inherited.View, err)
 			}
@@ -55,23 +55,11 @@ func TestViewSelectionAndLegacyDefaults(t *testing.T) {
 }
 
 func TestViewRoundTripsDoNotChangeDecisionOrReviewState(t *testing.T) {
-	inv, err := Scan(beamFixture(t))
-	if err != nil {
-		t.Fatal(err)
-	}
-	first, err := Build(inv, lifecyclePolicy(""), nil, "Example")
-	if err != nil {
-		t.Fatal(err)
-	}
-	prior, err := Build(inv, Policy{}, &first, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, beamFixture(t), ScanOptions{})
+	first := buildTestReport(t, inv, lifecyclePolicy(""), nil, "Example", BuildOptions{})
+	prior := buildTestReport(t, inv, Policy{}, &first, "", BuildOptions{})
 	for _, view := range []View{RadarView, TableView} {
-		r, err := BuildWithOptions(inv, Policy{}, &prior, "", BuildOptions{View: view})
-		if err != nil {
-			t.Fatal(err)
-		}
+		r := buildTestReport(t, inv, Policy{}, &prior, "", BuildOptions{View: view})
 		unchanged := r
 		unchanged.View = prior.View
 		if !reflect.DeepEqual(prior, unchanged) {
@@ -82,18 +70,12 @@ func TestViewRoundTripsDoNotChangeDecisionOrReviewState(t *testing.T) {
 				if compact && format == "json" {
 					continue
 				}
-				data, err := Render(r, format)
-				if compact {
-					data, err = RenderDocument(r, format, "evidence.json", strings.Repeat("a", 64))
-				}
-				if err != nil {
-					t.Fatal(err)
-				}
+				data := renderTestExport(t, r, format, compact)
 				recovered, err := ReadReport(data)
 				if err != nil || recovered.View != view {
 					t.Fatalf("%s compact=%v view lost: %v", format, compact, err)
 				}
-				next, err := Build(inv, Policy{}, &recovered, "")
+				next, err := BuildWithOptions(inv, Policy{}, &recovered, "", BuildOptions{})
 				if err != nil || !reflect.DeepEqual(r, next) {
 					t.Fatalf("%s compact=%v replay changed state: %v", format, compact, err)
 				}
@@ -114,20 +96,14 @@ func TestViewRoundTripsDoNotChangeDecisionOrReviewState(t *testing.T) {
 func TestDecisionTableGroupsMembersAndEscapesSuppliedText(t *testing.T) {
 	root := t.TempDir()
 	fixture(t, root, "package.json", `{"dependencies":{"react":"19","@radix-ui/react-dialog":"1","unrecognized-helper":"1"}}`)
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
 	d := Decision{Lifecycle: "Hold", Scope: "UI | <scope>", Rationale: "Review [link](javascript:alert(1))", Owner: "UI <team>", Status: "approved", Reference: "docs/<script>decision</script>|record", Reviewed: "2026-11-03"}
-	r, err := Build(inv, Policy{Model: LifecycleModel, Rules: map[string]Decision{"react": d, "npm:@radix-ui/react-dialog": d}}, nil, "Example")
-	if err != nil {
-		t.Fatal(err)
-	}
+	r := buildTestReport(t, inv, Policy{Model: LifecycleModel, Rules: map[string]Decision{"react": d, "npm:@radix-ui/react-dialog": d}}, nil, "Example", BuildOptions{})
 	groups := decisionGroups(r, false)
 	count := 0
 	for _, group := range groups {
 		for _, f := range group.Findings {
-			for _, member := range tableMembers(r, f) {
+			for _, member := range tableMembers(findingsByID(r), f) {
 				count++
 				if member.ID == "" {
 					t.Fatal("missing member")
@@ -140,13 +116,7 @@ func TestDecisionTableGroupsMembersAndEscapesSuppliedText(t *testing.T) {
 	}
 	for _, format := range []string{"markdown", "html"} {
 		for _, compact := range []bool{false, true} {
-			data, err := Render(r, format)
-			if compact {
-				data, err = RenderDocument(r, format, "evidence.json", strings.Repeat("a", 64))
-			}
-			if err != nil {
-				t.Fatal(err)
-			}
+			data := renderTestExport(t, r, format, compact)
 			body := strings.SplitN(string(data), snapshotStart, 2)[0]
 			for _, value := range []string{"Hold", "2026-11-03", "npm:@radix-ui/react-dialog", "Needs decision"} {
 				if !strings.Contains(body, value) {
@@ -181,14 +151,8 @@ func TestDecisionTableGroupsMembersAndEscapesSuppliedText(t *testing.T) {
 func TestCompactTableKeepsExistingRecommendationHighlights(t *testing.T) {
 	root := t.TempDir()
 	fixture(t, root, "package.json", `{"dependencies":{"react":"19","unrecognized-helper":"1"}}`)
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	r, err := BuildWithOptions(inv, Policy{}, nil, "", BuildOptions{View: TableView})
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
+	r := buildTestReport(t, inv, Policy{}, nil, "", BuildOptions{View: TableView})
 	for _, concise := range []bool{false, true} {
 		count := 0
 		for _, group := range decisionGroups(r, concise) {
@@ -204,20 +168,11 @@ func TestCompactTableKeepsExistingRecommendationHighlights(t *testing.T) {
 }
 
 func TestLifecycleTablePreservesCarriedLegacyNotes(t *testing.T) {
-	inv, err := Scan(beamFixture(t))
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, beamFixture(t), ScanOptions{})
 	for _, note := range []string{"maintain", "legacy <script>phase</script>|note"} {
 		policy := Policy{Rules: map[string]Decision{"phoenix": {Lifecycle: note}}}
-		original, err := Build(inv, policy, nil, "Example")
-		if err != nil {
-			t.Fatal(err)
-		}
-		r, err := BuildWithOptions(inv, Policy{}, &original, "", BuildOptions{Model: LifecycleModel})
-		if err != nil {
-			t.Fatal(err)
-		}
+		original := buildTestReport(t, inv, policy, nil, "Example", BuildOptions{})
+		r := buildTestReport(t, inv, Policy{}, &original, "", BuildOptions{Model: LifecycleModel})
 		f := finding(t, Inventory{Findings: r.Findings}, "phoenix")
 		if r.View != TableView || r.Model.ring(f) != "Needs decision" || f.Decision.Status != "" || f.Decision.Lifecycle != note {
 			t.Fatal("carried legacy note changed decision meaning")
@@ -225,13 +180,7 @@ func TestLifecycleTablePreservesCarriedLegacyNotes(t *testing.T) {
 		for _, format := range []string{"html", "markdown"} {
 			for _, compact := range []bool{false, true} {
 				t.Run(note+"/"+format+"/"+fmt.Sprint(compact), func(t *testing.T) {
-					data, err := Render(r, format)
-					if compact {
-						data, err = RenderDocument(r, format, "evidence.json", strings.Repeat("a", 64))
-					}
-					if err != nil {
-						t.Fatal(err)
-					}
+					data := renderTestExport(t, r, format, compact)
 					body := strings.SplitN(string(data), snapshotStart, 2)[0]
 					want := "<br>Lifecycle: " + tableText(note)
 					if format == "html" {

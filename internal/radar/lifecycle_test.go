@@ -18,10 +18,7 @@ func lifecyclePolicy(reference string) Policy {
 
 func TestLifecycleBaselineBecomesSubsequentAndThenStable(t *testing.T) {
 	inv := inventoryForTests()
-	first, err := Build(inv, lifecyclePolicy(""), nil, "Example")
-	if err != nil {
-		t.Fatal(err)
-	}
+	first := buildTestReport(t, inv, lifecyclePolicy(""), nil, "Example", BuildOptions{})
 	if first.Model != LifecycleModel || !first.Baseline {
 		t.Fatalf("missing baseline model: %#v", first)
 	}
@@ -37,22 +34,13 @@ func TestLifecycleBaselineBecomesSubsequentAndThenStable(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		prior, err := ReadReport(data)
-		if err != nil {
-			t.Fatal(err)
-		}
-		second, err := Build(inv, Policy{}, &prior, "")
-		if err != nil {
-			t.Fatal(err)
-		}
+		prior := readTestReport(t, data)
+		second := buildTestReport(t, inv, Policy{}, &prior, "", BuildOptions{})
 		f = finding(t, Inventory{Findings: second.Findings}, "phoenix")
 		if second.Baseline || !f.MissingDecisionMaterial || !f.ReviewRequired || f.EvidenceChanged || f.Decision.Status != "approved" {
 			t.Fatalf("unchanged baseline missed material gap: %#v", f)
 		}
-		third, err := Build(inv, Policy{}, &second, "")
-		if err != nil {
-			t.Fatal(err)
-		}
+		third := buildTestReport(t, inv, Policy{}, &second, "", BuildOptions{})
 		if !reflect.DeepEqual(second, third) {
 			t.Fatal("identical later generation changed state")
 		}
@@ -66,39 +54,24 @@ func TestLifecycleBaselineBecomesSubsequentAndThenStable(t *testing.T) {
 
 func TestLifecycleReferencesChangesAndModelSwitch(t *testing.T) {
 	inv := inventoryForTests()
-	old, err := Build(inv, Policy{Rules: map[string]Decision{"phoenix": {Ring: "Trial", Lifecycle: "maintain", Scope: "web", Rationale: "Team proposal"}}}, nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	switched, err := BuildWithOptions(inv, Policy{}, &old, "", BuildOptions{Model: LifecycleModel})
-	if err != nil {
-		t.Fatal(err)
-	}
+	old := buildTestReport(t, inv, Policy{Rules: map[string]Decision{"phoenix": {Ring: "Trial", Lifecycle: "maintain", Scope: "web", Rationale: "Team proposal"}}}, nil, "", BuildOptions{})
+	switched := buildTestReport(t, inv, Policy{}, &old, "", BuildOptions{Model: LifecycleModel})
 	f := finding(t, Inventory{Findings: switched.Findings}, "phoenix")
 	if f.Decision != old.Decisions["phoenix"] || switched.Model.ring(f) != "Needs decision" || f.PlacementChange != nil || !f.MissingDecisionMaterial {
 		t.Fatalf("model switch fabricated lifecycle: %#v", f)
 	}
-	approved, err := Build(inv, lifecyclePolicy("docs/adr-1.md"), &switched, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	approved := buildTestReport(t, inv, lifecyclePolicy("docs/adr-1.md"), &switched, "", BuildOptions{})
 	f = finding(t, Inventory{Findings: approved.Findings}, "phoenix")
 	if f.MissingDecisionMaterial || f.ReviewRequired || f.Decision.Status != "approved" {
 		t.Fatalf("supplied decision lost: %#v", f)
 	}
 	inv.Findings[0].Evidence[0].Detail = "changed declaration"
-	changed, err := Build(inv, Policy{}, &approved, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	changed := buildTestReport(t, inv, Policy{}, &approved, "", BuildOptions{})
 	if f = finding(t, Inventory{Findings: changed.Findings}, "phoenix"); !f.EvidenceChanged || !f.ReviewRequired || f.MissingDecisionMaterial {
 		t.Fatalf("evidence and material gaps confused: %#v", f)
 	}
 	inv.Findings = inv.Findings[1:]
-	removed, err := Build(inv, Policy{}, &changed, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	removed := buildTestReport(t, inv, Policy{}, &changed, "", BuildOptions{})
 	if f = finding(t, Inventory{Findings: removed.Findings}, "phoenix"); f.Presence != "not detected" || !f.ReviewRequired || f.Decision.Lifecycle != "Adopt" {
 		t.Fatal("removed decision lost")
 	}
@@ -111,14 +84,14 @@ func TestLifecycleValidationAndOriginalCompatibility(t *testing.T) {
 		`{"schema_version":1,"rules":{"phoenix":{"ring":"Adopt","status":"approved","scope":"web","rationale":"decision","owner":"Team","reviewed":"2026-11-03"}}}`,
 		`{"schema_version":1,"model":"unknown","rules":{}}`,
 	} {
-		if _, err := ReadPolicy([]byte(body)); err == nil {
+		if _, err := ReadPolicyForModel([]byte(body), RecommendationModel); err == nil {
 			t.Fatalf("accepted invalid policy %s", body)
 		}
 	}
 	if _, err := BuildWithOptions(inventoryForTests(), lifecyclePolicy(""), nil, "", BuildOptions{Model: RecommendationModel}); err == nil || !strings.Contains(err.Error(), "model") {
 		t.Fatal("conflicting explicit models accepted")
 	}
-	if _, err := ReadPolicy([]byte(`{"schema_version":1,"rules":{"phoenix":{"lifecycle":"custom legacy text"}}}`)); err != nil {
+	if _, err := ReadPolicyForModel([]byte(`{"schema_version":1,"rules":{"phoenix":{"lifecycle":"custom legacy text"}}}`), RecommendationModel); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -126,16 +99,10 @@ func TestLifecycleValidationAndOriginalCompatibility(t *testing.T) {
 func TestLifecycleGroupingRequiresEveryMemberDecisionToAgree(t *testing.T) {
 	root := t.TempDir()
 	fixture(t, root, "package.json", `{"dependencies":{"react":"19","@radix-ui/react-dialog":"1"}}`)
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
 	d := Decision{Lifecycle: "Hold", Scope: "UI component", Rationale: "Review migration", Status: "approved", Owner: "UI team", Reviewed: "2026-11-03", Reference: "docs/adr-ui.md"}
 	p := Policy{Model: LifecycleModel, Rules: map[string]Decision{"react": d, "npm:@radix-ui/react-dialog": d}}
-	grouped, err := Build(inv, p, nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	grouped := buildTestReport(t, inv, p, nil, "", BuildOptions{})
 	f := finding(t, Inventory{Findings: grouped.Highlights}, "react")
 	if !contains(f.Members, "npm:@radix-ui/react-dialog") || f.Decision != d || grouped.Decisions["npm:@radix-ui/react-dialog"] != d {
 		t.Fatal("identical supplied decisions failed to group or were lost")
@@ -162,10 +129,7 @@ func TestLifecycleGroupingRequiresEveryMemberDecisionToAgree(t *testing.T) {
 			changed.Status = "proposed"
 		}
 		p.Rules["npm:@radix-ui/react-dialog"] = changed
-		separate, err := Build(inv, p, nil, "")
-		if err != nil {
-			t.Fatal(err)
-		}
+		separate := buildTestReport(t, inv, p, nil, "", BuildOptions{})
 		parent := finding(t, Inventory{Findings: separate.Highlights}, "react")
 		child := finding(t, Inventory{Findings: separate.Highlights}, "npm:@radix-ui/react-dialog")
 		if contains(parent.Members, child.ID) || child.Decision != changed {
@@ -173,10 +137,7 @@ func TestLifecycleGroupingRequiresEveryMemberDecisionToAgree(t *testing.T) {
 		}
 	}
 	delete(p.Rules, "npm:@radix-ui/react-dialog")
-	unapproved, err := Build(inv, p, nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	unapproved := buildTestReport(t, inv, p, nil, "", BuildOptions{})
 	child := finding(t, Inventory{Findings: unapproved.Highlights}, "npm:@radix-ui/react-dialog")
 	if unapproved.Model.ring(child) != "Needs decision" || child.Decision.Status == "approved" {
 		t.Fatal("parent decision approved child")
@@ -186,17 +147,11 @@ func TestLifecycleGroupingRequiresEveryMemberDecisionToAgree(t *testing.T) {
 func TestLifecycleMovementAndCrossModelApprovals(t *testing.T) {
 	inv := inventoryForTests()
 	p := lifecyclePolicy("docs/adr-1.md")
-	first, err := Build(inv, p, nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	first := buildTestReport(t, inv, p, nil, "", BuildOptions{})
 	d := p.Rules["phoenix"]
 	d.Lifecycle = "Experiment"
 	p.Rules["phoenix"] = d
-	second, err := Build(inv, p, &first, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	second := buildTestReport(t, inv, p, &first, "", BuildOptions{})
 	if f := finding(t, Inventory{Findings: second.Findings}, "phoenix"); f.PlacementChange == nil || f.PlacementChange.Kind != "moved-out" || f.PlacementChange.PreviousRing != "Adopt" {
 		t.Fatalf("lost lifecycle movement: %#v", f)
 	}
@@ -204,18 +159,12 @@ func TestLifecycleMovementAndCrossModelApprovals(t *testing.T) {
 		t.Fatal("cross-model approval did not require explicit replacement")
 	}
 	replacement := Policy{Rules: map[string]Decision{"phoenix": {Ring: "Trial", Scope: "web", Rationale: "reviewed target model decision", Status: "approved", Owner: "Team", Reference: "PR #2", Reviewed: "2026-11-03"}}}
-	switched, err := BuildWithOptions(inv, replacement, &second, "", BuildOptions{Model: RecommendationModel})
-	if err != nil {
-		t.Fatal(err)
-	}
+	switched := buildTestReport(t, inv, replacement, &second, "", BuildOptions{Model: RecommendationModel})
 	if f := finding(t, Inventory{Findings: switched.Findings}, "phoenix"); f.PlacementChange != nil || f.Decision != replacement.Rules["phoenix"] {
 		t.Fatal("explicit switch lost decision or fabricated movement")
 	}
 	inv.Findings = append(inv.Findings, Finding{ID: "new-tool", Name: "New tool", Quadrant: "Tools", Presence: "detected", Evidence: []Evidence{}})
-	withNew, err := BuildWithOptions(inv, Policy{}, &switched, "", BuildOptions{Model: LifecycleModel})
-	if err != nil {
-		t.Fatal(err)
-	}
+	withNew := buildTestReport(t, inv, Policy{}, &switched, "", BuildOptions{Model: LifecycleModel})
 	if f := finding(t, Inventory{Findings: withNew.Findings}, "new-tool"); f.PlacementChange == nil || f.PlacementChange.Kind != "new" || !f.MissingDecisionMaterial {
 		t.Fatal("model switch hid newly observed technology")
 	}
@@ -225,45 +174,25 @@ func TestLifecycleMovementAndCrossModelApprovals(t *testing.T) {
 }
 
 func TestLifecycleCompactAndEscapedRoundTrips(t *testing.T) {
-	inv, scanErr := Scan(beamFixture(t))
+	inv, scanErr := ScanWithOptions(beamFixture(t), ScanOptions{})
 	if scanErr != nil {
 		t.Fatal(scanErr)
 	}
 	p := lifecyclePolicy(`docs/<script>decision</script>|record`)
-	baseline, err := Build(inv, p, nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	second, err := Build(inv, Policy{}, &baseline, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	baseline := buildTestReport(t, inv, p, nil, "", BuildOptions{})
+	second := buildTestReport(t, inv, Policy{}, &baseline, "", BuildOptions{})
 	for _, format := range []string{"markdown", "html"} {
 		for _, compact := range []bool{false, true} {
-			var data []byte
-			if compact {
-				data, err = RenderDocument(second, format, "evidence.json", strings.Repeat("a", 64))
-			} else {
-				data, err = Render(second, format)
-			}
-			if err != nil {
-				t.Fatal(err)
-			}
+			data := renderTestExport(t, second, format, compact)
 			body := strings.SplitN(string(data), snapshotStart, 2)[0]
 			if strings.Contains(body, "<script>decision</script>") || !strings.Contains(body, "Adopt") || !strings.Contains(body, "Needs decision") || !strings.Contains(body, "missing decision material") || !strings.Contains(body, "https://martinfowler.com/articles/scaling-architecture-conversationally.html") {
 				t.Fatal("wrong lifecycle labels, gaps or escaping")
 			}
-			recovered, err := ReadReport(data)
-			if err != nil {
-				t.Fatal(err)
-			}
+			recovered := readTestReport(t, data)
 			if recovered.Model != LifecycleModel || recovered.Baseline || !finding(t, Inventory{Findings: recovered.Findings}, "python").MissingDecisionMaterial {
 				t.Fatal("snapshot lost lifecycle review state")
 			}
-			again, err := Build(inv, Policy{}, &recovered, "")
-			if err != nil {
-				t.Fatal(err)
-			}
+			again := buildTestReport(t, inv, Policy{}, &recovered, "", BuildOptions{})
 			if !reflect.DeepEqual(second, again) {
 				t.Fatal("compact replay changed state")
 			}
@@ -272,10 +201,7 @@ func TestLifecycleCompactAndEscapedRoundTrips(t *testing.T) {
 }
 
 func TestLegacyReportsKeepFreeTextLifecycleAndRecommendationMeaning(t *testing.T) {
-	original, err := Build(inventoryForTests(), Policy{Rules: map[string]Decision{"phoenix": {Ring: "Trial", Lifecycle: "custom <script>phase</script>", Scope: "web", Rationale: "Team decision"}}}, nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	original := buildTestReport(t, inventoryForTests(), Policy{Rules: map[string]Decision{"phoenix": {Ring: "Trial", Lifecycle: "custom <script>phase</script>", Scope: "web", Rationale: "Team decision"}}}, nil, "", BuildOptions{})
 	original.Model = ""
 	for _, schema := range []int{1, 2} {
 		original.SchemaVersion = schema
@@ -284,14 +210,8 @@ func TestLegacyReportsKeepFreeTextLifecycleAndRecommendationMeaning(t *testing.T
 			if err != nil {
 				t.Fatal(err)
 			}
-			recovered, err := ReadReport(data)
-			if err != nil {
-				t.Fatal(err)
-			}
-			next, err := Build(inventoryForTests(), Policy{}, &recovered, "")
-			if err != nil {
-				t.Fatal(err)
-			}
+			recovered := readTestReport(t, data)
+			next := buildTestReport(t, inventoryForTests(), Policy{}, &recovered, "", BuildOptions{})
 			f := finding(t, Inventory{Findings: next.Findings}, "phoenix")
 			if next.Model != RecommendationModel || f.Decision.Lifecycle != original.Decisions["phoenix"].Lifecycle || ring(f) != "Trial" || f.MissingDecisionMaterial {
 				t.Fatal("legacy report interpretation changed")
@@ -311,32 +231,20 @@ func TestContextRejectsLifecycleReviewStateInCapturedObservations(t *testing.T) 
 func TestLifecycleGroupMaterialGapsAndExclusionsRemainIndependent(t *testing.T) {
 	root := t.TempDir()
 	fixture(t, root, "package.json", `{"dependencies":{"react":"19","@radix-ui/react-dialog":"1"}}`)
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
 	d := Decision{Lifecycle: "Hold", Quadrant: "Languages & Frameworks", Scope: "UI component", Rationale: "Team review", Status: "approved", Owner: "UI team", Reviewed: "2026-11-03"}
 	p := Policy{Model: LifecycleModel, Rules: map[string]Decision{"react": d, "npm:@radix-ui/react-dialog": d}}
-	first, err := Build(inv, p, nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	first := buildTestReport(t, inv, p, nil, "", BuildOptions{})
 	if f := finding(t, Inventory{Findings: first.Highlights}, "react"); f.MissingDecisionMaterial || f.ReviewRequired || len(f.Members) != 2 {
 		t.Fatalf("baseline group state incorrect: %#v", f)
 	}
-	second, err := Build(inv, Policy{}, &first, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	second := buildTestReport(t, inv, Policy{}, &first, "", BuildOptions{})
 	if f := finding(t, Inventory{Findings: second.Highlights}, "react"); !f.MissingDecisionMaterial || !f.ReviewRequired {
 		t.Fatal("group lost member review gaps")
 	}
 	empty := inv
 	empty.Findings = nil
-	excluded, err := Build(empty, Policy{Rules: map[string]Decision{"react": {Exclude: true, Rationale: "Team excludes obsolete UI"}}}, &second, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	excluded := buildTestReport(t, empty, Policy{Rules: map[string]Decision{"react": {Exclude: true, Rationale: "Team excludes obsolete UI"}}}, &second, "", BuildOptions{})
 	if len(excluded.ExcludedFindings) != 1 || excluded.ExcludedFindings[0].MissingDecisionMaterial {
 		t.Fatal("excluded technology kept included-material gap")
 	}
@@ -348,14 +256,8 @@ func TestLifecycleGroupMaterialGapsAndExclusionsRemainIndependent(t *testing.T) 
 func TestLifecycleReferenceAloneDoesNotPlaceOrApprove(t *testing.T) {
 	inv := inventoryForTests()
 	p := Policy{Model: LifecycleModel, Rules: map[string]Decision{"phoenix": {Reference: "https://example.test/pull/1"}}}
-	first, err := Build(inv, p, nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	second, err := Build(inv, Policy{}, &first, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	first := buildTestReport(t, inv, p, nil, "", BuildOptions{})
+	second := buildTestReport(t, inv, Policy{}, &first, "", BuildOptions{})
 	f := finding(t, Inventory{Findings: second.Findings}, "phoenix")
 	if second.Model.ring(f) != "Needs decision" || f.Decision.Status == "approved" || f.Proposal != nil || !f.ReviewRequired || f.MissingDecisionMaterial {
 		t.Fatal("reference granted lifecycle authority or was ignored")
@@ -364,27 +266,15 @@ func TestLifecycleReferenceAloneDoesNotPlaceOrApprove(t *testing.T) {
 
 func TestRemovingLifecycleMaterialDoesNotClearChangedEvidence(t *testing.T) {
 	inv := inventoryForTests()
-	first, err := Build(inv, lifecyclePolicy("docs/adr-1.md"), nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	first := buildTestReport(t, inv, lifecyclePolicy("docs/adr-1.md"), nil, "", BuildOptions{})
 	inv.Findings[0].Evidence[0].Detail = "new dependency version"
-	changed, err := Build(inv, Policy{}, &first, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	missing, err := Build(inv, lifecyclePolicy(""), &changed, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	changed := buildTestReport(t, inv, Policy{}, &first, "", BuildOptions{})
+	missing := buildTestReport(t, inv, lifecyclePolicy(""), &changed, "", BuildOptions{})
 	f := finding(t, Inventory{Findings: missing.Findings}, "phoenix")
 	if !f.EvidenceChanged || !f.MissingDecisionMaterial || !f.ReviewRequired {
 		t.Fatal("removing decision material silently reviewed changed evidence")
 	}
-	reviewed, err := Build(inv, lifecyclePolicy("docs/adr-2.md"), &missing, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	reviewed := buildTestReport(t, inv, lifecyclePolicy("docs/adr-2.md"), &missing, "", BuildOptions{})
 	f = finding(t, Inventory{Findings: reviewed.Findings}, "phoenix")
 	if f.EvidenceChanged || f.MissingDecisionMaterial || f.ReviewRequired {
 		t.Fatal("supplied review did not resolve independent gaps")
@@ -392,10 +282,7 @@ func TestRemovingLifecycleMaterialDoesNotClearChangedEvidence(t *testing.T) {
 }
 
 func TestLifecycleChartPlacesAllStatesInTheirCanonicalBands(t *testing.T) {
-	inv, err := Scan(beamFixture(t))
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, beamFixture(t), ScanOptions{})
 	cases := []struct {
 		id, lifecycle string
 		inner, outer  float64
@@ -409,20 +296,9 @@ func TestLifecycleChartPlacesAllStatesInTheirCanonicalBands(t *testing.T) {
 	for _, tt := range cases {
 		p.Rules[tt.id] = Decision{Lifecycle: tt.lifecycle, Scope: "application", Rationale: "Supplied team decision"}
 	}
-	r, err := BuildWithOptions(inv, p, nil, "", BuildOptions{View: RadarView})
-	if err != nil {
-		t.Fatal(err)
-	}
+	r := buildTestReport(t, inv, p, nil, "", BuildOptions{View: RadarView})
 	for _, compact := range []bool{false, true} {
-		var data []byte
-		if compact {
-			data, err = RenderDocument(r, "html", "evidence.json", strings.Repeat("a", 64))
-		} else {
-			data, err = Render(r, "html")
-		}
-		if err != nil {
-			t.Fatal(err)
-		}
+		data := renderTestExport(t, r, "html", compact)
 		for _, tt := range cases {
 			f := finding(t, Inventory{Findings: r.Findings}, tt.id)
 			pattern := fmt.Sprintf(`<a href="#entry-%d"[^>]*><circle cx="([0-9.]+)" cy="([0-9.]+)"`, f.Number)
@@ -446,19 +322,10 @@ func TestLifecycleChartPlacesAllStatesInTheirCanonicalBands(t *testing.T) {
 func TestLifecycleReportRejectsForgedReviewAndGroupedApproval(t *testing.T) {
 	root := t.TempDir()
 	fixture(t, root, "package.json", `{"dependencies":{"react":"19","@radix-ui/react-dialog":"1"}}`)
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
 	d := Decision{Lifecycle: "Adopt", Scope: "UI", Rationale: "Team decision", Owner: "UI team", Status: "approved", Reviewed: "2026-11-03"}
-	first, err := Build(inv, Policy{Model: LifecycleModel, Rules: map[string]Decision{"react": d, "npm:@radix-ui/react-dialog": d}}, nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	second, err := Build(inv, Policy{}, &first, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	first := buildTestReport(t, inv, Policy{Model: LifecycleModel, Rules: map[string]Decision{"react": d, "npm:@radix-ui/react-dialog": d}}, nil, "", BuildOptions{})
+	second := buildTestReport(t, inv, Policy{}, &first, "", BuildOptions{})
 	for i := range second.Findings {
 		second.Findings[i].MissingDecisionMaterial = false
 	}

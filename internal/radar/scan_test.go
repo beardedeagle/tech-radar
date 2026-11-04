@@ -43,10 +43,7 @@ func TestExplicitModuleRulesSupportDifferentApplicationNamespaces(t *testing.T) 
 			if err != nil {
 				t.Fatal(err)
 			}
-			inv, err := ScanWithRules(root, rules)
-			if err != nil {
-				t.Fatal(err)
-			}
+			inv := scanTestRepository(t, root, ScanOptions{Rules: rules})
 			for _, id := range []string{"hubspot", "myutilities", "bindable", "local-logic", "mapbox", "smarty", "aws-kms", "feature-flags"} {
 				f := finding(t, inv, id)
 				if len(f.Evidence) != 1 {
@@ -64,10 +61,7 @@ func TestGenericModuleDetectionIgnoresCommentsAndLongerNames(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	inv, err := ScanWithRules(root, rules)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{Rules: rules})
 	for _, f := range inv.Findings {
 		if f.ID == "hubspot" || f.ID == "aws-kms" {
 			t.Fatalf("non-reference matched: %s", f.ID)
@@ -80,24 +74,12 @@ func TestApprovalFlagsChangedEvidenceBeyondDisplayLimit(t *testing.T) {
 	for i := 0; i < 31; i++ {
 		fixture(t, root, fmt.Sprintf("app%02d/package.json", i), `{"dependencies":{"react":"19.0.0"}}`)
 	}
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
 	policy := Policy{SchemaVersion: 1, Rules: map[string]Decision{"react": {Ring: "Adopt", Scope: "Web", Rationale: "Team decision", Owner: "Team", Status: "approved", Reference: "PR #1", Reviewed: "2026-10-30"}}}
-	previous, err := Build(inv, policy, nil, "Demo")
-	if err != nil {
-		t.Fatal(err)
-	}
+	previous := buildTestReport(t, inv, policy, nil, "Demo", BuildOptions{})
 	fixture(t, root, "app30/package.json", `{"dependencies":{"react":"20.0.0"}}`)
-	inv, err = Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	next, err := Build(inv, Policy{}, &previous, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv = scanTestRepository(t, root, ScanOptions{})
+	next := buildTestReport(t, inv, Policy{}, &previous, "", BuildOptions{})
 	if len(next.Findings) != 1 || !next.Findings[0].EvidenceChanged || !next.Findings[0].ReviewRequired {
 		t.Fatal("changed evidence outside the display limit retained an unflagged approval")
 	}
@@ -106,23 +88,14 @@ func TestApprovalFlagsChangedEvidenceBeyondDisplayLimit(t *testing.T) {
 func TestGeneratedJSONDoesNotBecomeScannerInput(t *testing.T) {
 	root := t.TempDir()
 	fixture(t, root, "package.json", `{"dependencies":{"react":"19.0.0"}}`)
-	initial, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	report, err := Build(initial, Policy{}, nil, "Demo")
-	if err != nil {
-		t.Fatal(err)
-	}
+	initial := scanTestRepository(t, root, ScanOptions{})
+	report := buildTestReport(t, initial, Policy{}, nil, "Demo", BuildOptions{})
 	data, err := Render(report, "json")
 	if err != nil {
 		t.Fatal(err)
 	}
 	fixture(t, root, "infrastructure/radar.json", string(data))
-	next, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	next := scanTestRepository(t, root, ScanOptions{})
 	if !reflect.DeepEqual(initial, next) {
 		t.Fatal("generated JSON changed its own scan inputs")
 	}
@@ -148,10 +121,7 @@ func TestScanManifestEvidenceAndNoAdoption(t *testing.T) {
 	fixture(t, root, ".tool-versions", "elixir 1.20.2-otp-29\nerlang 29.0\n")
 	fixture(t, root, "Dockerfile", "FROM postgres:15\n")
 	fixture(t, root, "config/runtime.exs", "config :demo, token: \"DO_NOT_EXPORT_THIS_VALUE\"\nkey = System.get_env(\"HUBSPOT_API_KEY\")\n")
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
 	phoenix := finding(t, inv, "phoenix")
 	if len(phoenix.Evidence) != 2 {
 		t.Fatalf("want constraint and resolved version, got %#v", phoenix.Evidence)
@@ -192,10 +162,7 @@ func TestScanIgnoresDependenciesCredentialsAndSymlinks(t *testing.T) {
 	if err := os.Symlink(external, filepath.Join(root, "external")); err != nil {
 		t.Fatal(err)
 	}
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
 	if len(inv.Findings) != 1 || inv.Findings[0].ID != "react" {
 		t.Fatalf("crossed scan boundary: %#v", inv.Findings)
 	}
@@ -204,7 +171,7 @@ func TestScanIgnoresDependenciesCredentialsAndSymlinks(t *testing.T) {
 func TestScanRejectsMalformedSupportedManifest(t *testing.T) {
 	root := t.TempDir()
 	fixture(t, root, "assets/package.json", "{broken")
-	if _, err := Scan(root); err == nil || !strings.Contains(err.Error(), "assets/package.json") {
+	if _, err := ScanWithOptions(root, ScanOptions{}); err == nil || !strings.Contains(err.Error(), "assets/package.json") {
 		t.Fatalf("want contextual manifest error, got %v", err)
 	}
 }
@@ -219,23 +186,14 @@ func TestScanDeterministicAndIgnoresGeneratedDocuments(t *testing.T) {
 		f := files[i]
 		fixture(t, b, f[0], f[1])
 	}
-	x, err := Scan(a)
-	if err != nil {
-		t.Fatal(err)
-	}
-	y, err := Scan(b)
-	if err != nil {
-		t.Fatal(err)
-	}
+	x := scanTestRepository(t, a, ScanOptions{})
+	y := scanTestRepository(t, b, ScanOptions{})
 	if !reflect.DeepEqual(x, y) {
 		t.Fatalf("scan depends on filesystem creation order:\n%#v\n%#v", x, y)
 	}
 	before := x.Source.Fingerprint
 	fixture(t, a, "TECHNOLOGY_RADAR.md", "<!-- tech-radar:generated -->\nchanged generated output\n")
-	x, err = Scan(a)
-	if err != nil {
-		t.Fatal(err)
-	}
+	x = scanTestRepository(t, a, ScanOptions{})
 	if x.Source.Fingerprint != before {
 		t.Fatal("generated output became scanner input")
 	}
@@ -245,10 +203,7 @@ func TestScanGoModulesAndCommentedMixDependencies(t *testing.T) {
 	root := t.TempDir()
 	fixture(t, root, "go.mod", "module example.test/app\n\ngo 1.23\nrequire example.test/library v1.2.3\n")
 	fixture(t, root, "mix.exs", "# {:phoenix, \"~> 1.8\"}\n# use Ash.Resource\n")
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
 	_ = finding(t, inv, "go")
 	_ = finding(t, inv, "go:example.test/library")
 	for _, f := range inv.Findings {
@@ -263,10 +218,7 @@ func TestSCCCountsLanguagesAndIgnoresBlockCommentReferences(t *testing.T) {
 	root := t.TempDir()
 	fixture(t, root, "src/Main.java", "// header\nclass Main {}\n\n")
 	fixture(t, root, "src/app.js", "/*\nHUBSPOT_API_KEY is only a comment\n*/\nconsole.log('hello');\n")
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
 	_ = finding(t, inv, "language:java")
 	for _, f := range inv.Findings {
 		if f.ID == "hubspot" {
@@ -307,10 +259,7 @@ var command = "aws ecs describe-services"
 var message = "hello" // HONEYCOMB_API_KEY
 `)
 	fixture(t, root, "client.ex", "Req.new()\n")
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
 	found := map[string]Finding{}
 	for _, f := range inv.Findings {
 		found[f.ID] = f
@@ -349,10 +298,7 @@ var matcher = regexp.MustCompile("minio/minio")
 	if err != nil {
 		t.Fatal(err)
 	}
-	inv, err := ScanWithRules(root, rules)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{Rules: rules})
 	var custom *Finding
 	for i := range inv.Findings {
 		f := &inv.Findings[i]
@@ -384,10 +330,7 @@ func TestFrameworkSyntaxStaysDetectedInItsSourceLanguages(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			root := t.TempDir()
 			fixture(t, root, tc.name, tc.source)
-			inv, err := Scan(root)
-			if err != nil {
-				t.Fatal(err)
-			}
+			inv := scanTestRepository(t, root, ScanOptions{})
 			for _, f := range inv.Findings {
 				if f.ID == tc.id && len(f.Evidence) > 0 {
 					return
@@ -402,10 +345,7 @@ func TestIgnoreFileCountsDoNotBecomeALanguageChoice(t *testing.T) {
 	root := t.TempDir()
 	fixture(t, root, ".gitignore", "generated/\n")
 	fixture(t, root, "app.go", "package demo\n")
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
 	goFound, ignoreCounted := false, false
 	for _, f := range inv.Findings {
 		if f.ID == "language:gitignore" {

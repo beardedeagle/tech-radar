@@ -11,11 +11,6 @@ import (
 	"tech-radar/internal/jsonutil"
 )
 
-// ReadPolicy validates policy using its explicit model or recommendation.
-func ReadPolicy(data []byte) (Policy, error) {
-	return ReadPolicyForModel(data, RecommendationModel)
-}
-
 // ReadPolicyForModel validates policy using its explicit model or the supplied
 // fallback. A zero fallback uses recommendation semantics.
 func ReadPolicyForModel(data []byte, fallback Model) (Policy, error) {
@@ -105,16 +100,6 @@ func validateModelRules(rules map[string]Decision, model Model) error {
 		}
 	}
 	return nil
-}
-
-func Build(inv Inventory, policy Policy, previous *Report, name string) (Report, error) {
-	return BuildWithGrouping(inv, policy, previous, name, GroupingRules{})
-}
-
-// BuildWithGrouping applies explicit presentation rules while retaining raw
-// finding identities, evidence and policy. Invalid catalog inputs return errors.
-func BuildWithGrouping(inv Inventory, policy Policy, previous *Report, name string, grouping GroupingRules) (Report, error) {
-	return BuildWithOptions(inv, policy, previous, name, BuildOptions{Grouping: grouping})
 }
 
 // BuildOptions selects a report model, view and presentation grouping. The zero

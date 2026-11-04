@@ -15,6 +15,11 @@ func TestCLIViewSelectionAndPortableReplay(t *testing.T) {
 	for _, command := range []string{"scan", "generate"} {
 		for _, model := range []string{"recommendation", "lifecycle"} {
 			for _, view := range []string{"", "radar", "table"} {
+				// Both commands cover model defaults; explicit formats share the
+				// same view and replay pipeline, covered below by generate.
+				if command == "scan" && view != "" {
+					continue
+				}
 				t.Run(command+"/"+model+"/"+view, func(t *testing.T) {
 					repo, work := t.TempDir(), t.TempDir()
 					write(t, repo, "package.json", `{"dependencies":{"react":"19"}}`)

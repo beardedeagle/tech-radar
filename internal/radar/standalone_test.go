@@ -21,10 +21,7 @@ func TestStandaloneUsesSupportedManifestParsersAndProfiles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			root := t.TempDir()
 			fixture(t, root, tt.file, tt.content)
-			ordinary, err := Scan(root)
-			if err != nil {
-				t.Fatal(err)
-			}
+			ordinary := scanTestRepository(t, root, ScanOptions{})
 			finding(t, ordinary, tt.technology)
 			matched := false
 			for _, c := range ordinary.Components {

@@ -234,10 +234,9 @@ func synthesizeWithGrouping(r *Report, grouping GroupingRules) {
 	}
 	// Importance sets display order, not the radar ring.
 	sort.SliceStable(r.Highlights, func(i, j int) bool {
-		rank := map[string]int{"system_defining": 0, "workflow_enabling": 1, "implementation_support": 2, "unknown": 3}
-		a, b := rank[r.Highlights[i].Assessment.Significance], rank[r.Highlights[j].Assessment.Significance]
+		a, b := significanceRank(r.Highlights[i].Assessment.Significance), significanceRank(r.Highlights[j].Assessment.Significance)
 		if a != b {
-			return a < b
+			return a > b
 		}
 		return r.Highlights[i].ID < r.Highlights[j].ID
 	})
