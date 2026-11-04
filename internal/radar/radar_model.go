@@ -79,7 +79,7 @@ func (m Model) pending() string {
 
 func (m Model) ring(f Finding) string {
 	if m == LifecycleModel {
-		if lifecycle := canonicalLifecycle(f.Decision.Lifecycle); lifecycle != "" {
+		if lifecycle := canonicalLifecycle(f.Decision.Lifecycle); m.decisionModel(f.Decision) == LifecycleModel && lifecycle != "" {
 			return lifecycle
 		}
 		return m.pending()
@@ -96,7 +96,7 @@ func modelReviewNote(r Report) string {
 	if r.Baseline {
 		return "Lifecycle model. Initial baseline. Review gaps for missing decision material begin with the first use of --previous."
 	}
-	return "Lifecycle model. Subsequent generation. Missing decision material requires review for every included technology."
+	return "Lifecycle model. Subsequent generation. Included technologies missing a decision reference require review."
 }
 
 func modelRingExplanation(model Model) string {
@@ -106,16 +106,22 @@ func modelRingExplanation(model Model) string {
 	return "Adopt reflects established source use or a saved decision. Trial suggests a limited trial. Assess calls for investigation. Caution records concerns. Suggested placements need team review. Lifecycle is recorded separately."
 }
 
-// Existing recommendation decisions remain historical records after a switch to
-// lifecycle. Only canonical lifecycle values can place them in that model.
+// Legacy lifecycle exports also carried recommendation records without provenance.
+// Retain their free-text notes and recommendation approvals on read.
+func (m Model) decisionModel(d Decision) Model {
+	if d.Model != "" {
+		return d.Model
+	}
+	if m == LifecycleModel && canonicalLifecycle(d.Lifecycle) == "" && (d.Lifecycle != "" || d.Ring != "") {
+		return RecommendationModel
+	}
+	return m.effective()
+}
+
 func validateSavedDecisions(r Report) error {
 	for _, id := range sortedKeys(r.Decisions) {
-		model := r.Model
 		d := r.Decisions[id]
-		if model == LifecycleModel && canonicalLifecycle(d.Lifecycle) == "" {
-			model = RecommendationModel
-		}
-		if err := validateModelRules(map[string]Decision{id: d}, model); err != nil {
+		if err := validateModelRules(map[string]Decision{id: d}, r.Model.decisionModel(d)); err != nil {
 			return err
 		}
 	}

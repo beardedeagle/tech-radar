@@ -71,13 +71,46 @@ func compactFindings(findings []Finding) []Finding {
 	return result
 }
 
-func displayDecision(f Finding) Decision {
-	if f.Decision.Ring != "" || f.Proposal == nil {
-		return f.Decision
+func (m Model) displayDecision(f Finding) Decision {
+	d := f.Decision
+	if m.decisionModel(d) != m.effective() {
+		d = Decision{}
 	}
-	d := *f.Proposal
-	d.Rationale = displayReason(d.Rationale)
+	if m != LifecycleModel && d.Ring == "" && f.Proposal != nil {
+		d = *f.Proposal
+		d.Status = "suggested"
+		d.Rationale = displayReason(d.Rationale)
+	}
 	return d
+}
+
+func rationaleLabel(d Decision) string {
+	if d.Status == "suggested" {
+		return "Suggested rationale"
+	}
+	return "Rationale"
+}
+
+type decisionField struct {
+	Label string
+	Value string
+}
+
+// Historical authority stays visible alongside the active model's own projection.
+func (m Model) historicalDecision(f Finding) []decisionField {
+	d := f.Decision
+	origin := m.decisionModel(d)
+	inferred := m != LifecycleModel && d.Ring == "" && f.Proposal != nil
+	if d == (Decision{}) || (origin == m.effective() && !inferred) {
+		return nil
+	}
+	return []decisionField{
+		{"Historical decision model", string(origin)},
+		{"Historical status", d.Status}, {"Historical ring", d.Ring},
+		{"Historical scope", d.Scope}, {"Historical rationale", d.Rationale},
+		{"Historical lifecycle note", d.Lifecycle}, {"Historical owner", d.Owner},
+		{"Historical decision reference", d.Reference}, {"Historical reviewed", d.Reviewed},
+	}
 }
 
 // Saved reports include these explanations in their fingerprints and review
@@ -224,21 +257,26 @@ func conciseMarkdown(r Report, evidenceFile string) []byte {
 		}
 		b.WriteString("\n## Main findings\n\n" + modelRingExplanation(r.Model) + "\n\n| Finding | Importance / role | Confidence | Decision / review |\n|---|---|---|---|\n")
 		for _, f := range r.Highlights {
-			d := displayDecision(f)
+			d := r.Model.displayDecision(f)
 			significance, confidence := "unknown", "unknown"
 			if f.Assessment != nil {
 				significance = md(significanceLabel(f.Assessment.Significance)) + ": " + md(displayRole(f.Assessment.Role))
 				confidence = md(f.Assessment.Confidence)
 			}
-			note := md(status(f))
-			if f.Decision != (Decision{}) {
-				note += ". " + md(d.Rationale) + " Scope: " + md(d.Scope)
+			note := md(r.Model.status(f))
+			if d != (Decision{}) {
+				note += ". " + rationaleLabel(d) + ": " + md(d.Rationale) + " Scope: " + md(d.Scope)
 			}
-			if f.Decision.Owner != "" || f.Decision.Reference != "" {
-				note += ". " + md(f.Decision.Owner) + "; " + md(f.Decision.Reference) + "; " + md(f.Decision.Reviewed)
+			if d.Owner != "" || d.Reference != "" {
+				note += ". " + md(d.Owner) + "; " + md(d.Reference) + "; " + md(d.Reviewed)
 			}
-			if f.Decision.Lifecycle != "" {
-				note += ". Lifecycle: " + md(f.Decision.Lifecycle)
+			if d.Lifecycle != "" {
+				note += ". Lifecycle: " + md(d.Lifecycle)
+			}
+			for _, field := range r.Model.historicalDecision(f) {
+				if field.Value != "" {
+					note += ". " + field.Label + ": " + md(field.Value)
+				}
 			}
 			if len(f.Members) > 1 {
 				note += ". Members: " + md(strings.Join(f.Members, ", "))

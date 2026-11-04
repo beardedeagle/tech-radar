@@ -250,7 +250,7 @@ func validateInference(f Finding, model Model) error {
 }
 
 func ring(f Finding) string {
-	if f.Decision.Ring == "" {
+	if f.Decision.Model == LifecycleModel || f.Decision.Ring == "" {
 		if f.Proposal != nil {
 			return f.Proposal.Ring
 		}
@@ -264,11 +264,11 @@ func quadrant(f Finding) string {
 	}
 	return f.Quadrant
 }
-func status(f Finding) string {
-	label := f.Decision.Status
+func (m Model) status(f Finding) string {
+	label := m.displayDecision(f).Status
 	if label == "" {
 		label = "unreviewed"
-		if f.Proposal != nil {
+		if m != LifecycleModel && f.Proposal != nil {
 			label = "suggested"
 		}
 	}
@@ -325,11 +325,11 @@ func renderMarkdown(r Report) []byte {
 		}
 		b.WriteString("\n" + modelRingExplanation(r.Model) + "\n\n## Register\n\n")
 		for _, f := range r.Findings {
-			d := displayDecision(f)
-			fmt.Fprintf(&b, "### %d. %s\n\n- **ID:** `%s`\n- **Quadrant:** %s\n- **Ring:** %s\n- **Decision:** %s\n", f.Number, md(f.Name), md(f.ID), md(quadrant(f)), md(r.Model.ring(f)), md(status(f)))
-			for _, v := range []struct{ label, value string }{{"Scope", d.Scope}, {"Rationale", d.Rationale}, {"Owner", f.Decision.Owner}, {"Decision reference", f.Decision.Reference}, {"Reviewed", f.Decision.Reviewed}, {"Lifecycle", f.Decision.Lifecycle}} {
-				if v.value != "" {
-					fmt.Fprintf(&b, "- **%s:** %s\n", v.label, md(v.value))
+			d := r.Model.displayDecision(f)
+			fmt.Fprintf(&b, "### %d. %s\n\n- **ID:** `%s`\n- **Quadrant:** %s\n- **Ring:** %s\n- **Decision:** %s\n", f.Number, md(f.Name), md(f.ID), md(quadrant(f)), md(r.Model.ring(f)), md(r.Model.status(f)))
+			for _, v := range append([]decisionField{{"Scope", d.Scope}, {rationaleLabel(d), d.Rationale}, {"Owner", d.Owner}, {"Decision reference", d.Reference}, {"Reviewed", d.Reviewed}, {"Lifecycle", d.Lifecycle}}, r.Model.historicalDecision(f)...) {
+				if v.Value != "" {
+					fmt.Fprintf(&b, "- **%s:** %s\n", v.Label, md(v.Value))
 				}
 			}
 			if f.Presence != "detected" {
@@ -494,8 +494,10 @@ func renderHTMLView(r Report, concise bool, evidenceFile string) ([]byte, error)
 		"modelReview":     modelReviewNote,
 		"ringExplanation": modelRingExplanation,
 		"quadrant":        quadrant,
-		"status":          status,
-		"decision":        displayDecision,
+		"status":          r.Model.status,
+		"decision":        r.Model.displayDecision,
+		"historical":      r.Model.historicalDecision,
+		"rationaleLabel":  rationaleLabel,
 		"reason":          displayReason,
 		"significance":    significanceLabel,
 		"profile":         profileName,
@@ -755,20 +757,17 @@ footer {
               <p><strong>Scope:</strong> {{.Scope}}</p>
             {{end}}
             {{if .Rationale}}
-              <p><strong>Rationale:</strong> {{.Rationale}}</p>
+              <p><strong>{{rationaleLabel .}}:</strong> {{.Rationale}}</p>
             {{end}}
           {{end}}
-          {{if .Decision.Owner}}
-            <p><strong>Owner:</strong> {{.Decision.Owner}}</p>
+          {{with decision .}}
+            {{if .Owner}}<p><strong>Owner:</strong> {{.Owner}}</p>{{end}}
+            {{if .Reference}}<p><strong>Decision:</strong> {{.Reference}}</p>{{end}}
+            {{if .Reviewed}}<p><strong>Reviewed:</strong> {{.Reviewed}}</p>{{end}}
+            {{if .Lifecycle}}<p><strong>Lifecycle:</strong> {{.Lifecycle}}</p>{{end}}
           {{end}}
-          {{if .Decision.Reference}}
-            <p><strong>Decision:</strong> {{.Decision.Reference}}</p>
-          {{end}}
-          {{if .Decision.Reviewed}}
-            <p><strong>Reviewed:</strong> {{.Decision.Reviewed}}</p>
-          {{end}}
-          {{if .Decision.Lifecycle}}
-            <p><strong>Lifecycle:</strong> {{.Decision.Lifecycle}}</p>
+          {{range historical .}}
+            {{if .Value}}<p><strong>{{.Label}}:</strong> {{.Value}}</p>{{end}}
           {{end}}
           {{if eq .Presence "not detected"}}
             <p class="warning">Not detected in the current scan. Any listed evidence is from the prior snapshot.</p>

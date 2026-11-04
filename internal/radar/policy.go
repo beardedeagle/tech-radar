@@ -57,6 +57,12 @@ func validateRules(rules map[string]Decision) error {
 func validateModelRules(rules map[string]Decision, model Model) error {
 	for _, id := range sortedKeys(rules) {
 		d := rules[id]
+		if err := validateModel(d.Model); err != nil {
+			return fmt.Errorf("%s: decision model: %w", id, err)
+		}
+		if d.Model != "" && d.Model != model.effective() {
+			return fmt.Errorf("%s: decision model %q conflicts with policy model %q", id, d.Model, model.effective())
+		}
 		if !validID.MatchString(id) {
 			return fmt.Errorf("invalid technology id %q", id)
 		}
@@ -162,6 +168,9 @@ func BuildWithOptions(inv Inventory, policy Policy, previous *Report, name strin
 				if !replaced && (model == RecommendationModel || canonicalLifecycle(d.Lifecycle) != "") {
 					return Report{}, fmt.Errorf("%s: model switch requires an explicit %s policy replacement for the saved approval", id, model)
 				}
+			}
+			if d.Model == "" && d != (Decision{}) && model != previous.Model.effective() {
+				d.Model = previous.Model.decisionModel(d)
 			}
 			report.Decisions[id] = d
 		}
@@ -291,7 +300,7 @@ func BuildWithOptions(inv Inventory, policy Policy, previous *Report, name strin
 			}
 		}
 		f.MissingDecisionMaterial = model == LifecycleModel && previous != nil && strings.TrimSpace(d.Reference) == ""
-		f.ReviewRequired = f.MissingDecisionMaterial || (model != LifecycleModel && d.Ring == "") || (model == LifecycleModel && canonicalLifecycle(d.Lifecycle) == "") || f.Presence != "detected" || f.EvidenceChanged || d.Status != "approved" || f.Quadrant == ""
+		f.ReviewRequired = f.MissingDecisionMaterial || model.ring(f) == model.pending() || model.decisionModel(d) != model.effective() || f.Presence != "detected" || f.EvidenceChanged || d.Status != "approved" || f.Quadrant == ""
 		report.Findings = append(report.Findings, f)
 	}
 	sort.Strings(report.Excluded)

@@ -40,6 +40,7 @@ The approval fields above are illustrative. Real approval records identify the a
 
 | Field | Meaning |
 | --- | --- |
+| `model` | Optional source model, `recommendation` or `lifecycle`. A policy decision must match the selected report model. Saved decisions record it when carried across models. |
 | `name` | Optional display name. Required with a quadrant for a new manual ID unknown to the catalog. |
 | `quadrant` | `Techniques`, `Platforms`, `Tools`, or `Languages & Frameworks`. |
 | `ring` | Recommendation placement, `Adopt`, `Trial`, `Assess`, or `Caution`. Lifecycle placement uses `lifecycle`. |
@@ -100,6 +101,8 @@ It remains **not detected** and has no invented evidence. Manual candidates do n
 
 A current entry replaces the whole saved decision for its ID. Omitted entries carry forward. Changed evidence or classification retains the decision and requests review. A new review date or reference acknowledges the team's subsequent review. In lifecycle mode, clearing either field does not acknowledge an evidence change, and a missing reference still creates the subsequent-generation gap.
 
-An explicit model switch preserves supplied decisions and resets placement comparison. Carried approvals need complete target-model replacements before they can approve target placement. If a saved record cannot satisfy target validation, generation fails and requests a replacement. Recommendation Trial, Assess, and Caution never translate into lifecycle states.
+An explicit model switch preserves supplied decisions with their source model and resets placement comparison. The document labels historical status, rationale, scope, lifecycle notes and supplied ownership and review records separately from active placement. A recommendation lifecycle note remains historical even when its text matches a lifecycle state. An inferred recommendation has its own suggested status and rationale.
+
+A switch to recommendation requires explicit policy replacements for carried approvals. A switch to lifecycle requires replacements for carried approvals with canonical-looking lifecycle notes. Recommendation approvals without such a note can remain historical and unplaced. Each replacement supplies the whole target-model decision. Recommendation Trial, Assess, and Caution never translate into lifecycle states.
 
 The CLI records supplied approval metadata without authenticating its authority. Review this file through the same process used to establish the team's standard.

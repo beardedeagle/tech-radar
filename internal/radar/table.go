@@ -119,7 +119,7 @@ func markdownDecisionTable(b *strings.Builder, r Report, concise bool) {
 	for _, group := range decisionGroups(r, concise) {
 		fmt.Fprintf(b, "### %s\n\n| Technology / family | State | Scope | Owner | Decision reference | Reviewed | Changes / review | Evidence / members |\n|---|---|---|---|---|---|---|---|\n", tableText(group.Quadrant))
 		for _, f := range group.Findings {
-			d := displayDecision(f)
+			d := r.Model.displayDecision(f)
 			name := fmt.Sprintf("%d. %s", f.Number, tableText(f.Name))
 			if f.FamilyID != "" {
 				name += "<br>Family: " + tableText(f.FamilyID)
@@ -128,10 +128,15 @@ func markdownDecisionTable(b *strings.Builder, r Report, concise bool) {
 				name += "<br>Component: " + tableText(f.GroupComponent)
 			}
 			if d.Rationale != "" {
-				name += "<br>Rationale: " + tableText(d.Rationale)
+				name += "<br>" + rationaleLabel(d) + ": " + tableText(d.Rationale)
 			}
-			if f.Decision.Lifecycle != "" {
-				name += "<br>Lifecycle: " + tableText(f.Decision.Lifecycle)
+			if d.Lifecycle != "" {
+				name += "<br>Lifecycle: " + tableText(d.Lifecycle)
+			}
+			for _, field := range r.Model.historicalDecision(f) {
+				if field.Value != "" {
+					name += "<br>" + field.Label + ": " + tableText(field.Value)
+				}
 			}
 			var evidence []string
 			for _, member := range tableMembers(byID, f) {
@@ -151,7 +156,7 @@ func markdownDecisionTable(b *strings.Builder, r Report, concise bool) {
 			if concise {
 				evidence = append(evidence, "See linked evidence file")
 			}
-			fmt.Fprintf(b, "| %s | %s | %s | %s | %s | %s | %s<br>%s | %s |\n", name, tableText(r.Model.ring(f)), tableText(d.Scope), tableText(f.Decision.Owner), tableText(f.Decision.Reference), tableText(f.Decision.Reviewed), tableText(status(f)), tableText(placementNote(f)), strings.Join(evidence, "<br>"))
+			fmt.Fprintf(b, "| %s | %s | %s | %s | %s | %s | %s<br>%s | %s |\n", name, tableText(r.Model.ring(f)), tableText(d.Scope), tableText(d.Owner), tableText(d.Reference), tableText(d.Reviewed), tableText(r.Model.status(f)), tableText(placementNote(f)), strings.Join(evidence, "<br>"))
 		}
 		b.WriteString("\n")
 	}
@@ -280,17 +285,20 @@ const decisionTableHTML = `
                     {{end}}
                   </p>
                 {{end}}
+                {{range historical .}}
+                  {{if .Value}}<p><strong>{{.Label}}:</strong> {{.Value}}</p>{{end}}
+                {{end}}
                 <details>
                   <summary>Rationale, members and evidence</summary>
                   <p><code>{{.ID}}</code></p>
                   {{with decision .}}
                     {{if .Rationale}}
-                      <p><strong>Rationale:</strong> {{.Rationale}}</p>
+                      <p><strong>{{rationaleLabel .}}:</strong> {{.Rationale}}</p>
                     {{end}}
                   {{end}}
-                  {{if .Decision.Lifecycle}}
-                    <p>Lifecycle: {{.Decision.Lifecycle}}</p>
-                  {{end}}
+                  {{with decision .}}{{if .Lifecycle}}
+                    <p>Lifecycle: {{.Lifecycle}}</p>
+                  {{end}}{{end}}
                   {{with .Assessment}}
                     <p>
                       {{significance .Significance}} · confidence: {{.Confidence}}
@@ -338,25 +346,25 @@ const decisionTableHTML = `
                 {{- end -}}
               </td>
               <td>
-                {{- if .Decision.Owner -}}
-                  {{.Decision.Owner}}
+                {{- with decision . -}}{{- if .Owner -}}
+                  {{.Owner}}
                 {{- else -}}
                   Not supplied
-                {{- end -}}
+                {{- end -}}{{- end -}}
               </td>
               <td>
-                {{- if .Decision.Reference -}}
-                  {{.Decision.Reference}}
+                {{- with decision . -}}{{- if .Reference -}}
+                  {{.Reference}}
                 {{- else -}}
                   Not supplied
-                {{- end -}}
+                {{- end -}}{{- end -}}
               </td>
               <td>
-                {{- if .Decision.Reviewed -}}
-                  {{.Decision.Reviewed}}
+                {{- with decision . -}}{{- if .Reviewed -}}
+                  {{.Reviewed}}
                 {{- else -}}
                   Not supplied
-                {{- end -}}
+                {{- end -}}{{- end -}}
               </td>
               <td>
                 {{status .}}

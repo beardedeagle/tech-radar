@@ -57,7 +57,9 @@ func TestLifecycleReferencesChangesAndModelSwitch(t *testing.T) {
 	old := buildTestReport(t, inv, Policy{Rules: map[string]Decision{"phoenix": {Ring: "Trial", Lifecycle: "maintain", Scope: "web", Rationale: "Team proposal"}}}, nil, "", BuildOptions{})
 	switched := buildTestReport(t, inv, Policy{}, &old, "", BuildOptions{Model: LifecycleModel})
 	f := finding(t, Inventory{Findings: switched.Findings}, "phoenix")
-	if f.Decision != old.Decisions["phoenix"] || switched.Model.ring(f) != "Needs decision" || f.PlacementChange != nil || !f.MissingDecisionMaterial {
+	want := old.Decisions["phoenix"]
+	want.Model = RecommendationModel
+	if f.Decision != want || switched.Model.ring(f) != "Needs decision" || f.PlacementChange != nil || !f.MissingDecisionMaterial {
 		t.Fatalf("model switch fabricated lifecycle: %#v", f)
 	}
 	approved := buildTestReport(t, inv, lifecyclePolicy("docs/adr-1.md"), &switched, "", BuildOptions{})

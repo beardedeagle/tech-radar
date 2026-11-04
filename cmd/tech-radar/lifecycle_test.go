@@ -104,7 +104,7 @@ func TestCLILifecycleSwitchPreservesMetadataOnlyDecision(t *testing.T) {
 			t.Fatal(err)
 		}
 		f := r.Findings[0]
-		if r.Model != radar.LifecycleModel || r.Baseline || f.Decision != (radar.Decision{Lifecycle: "maintain"}) || f.Proposal != nil || !f.MissingDecisionMaterial || !f.ReviewRequired {
+		if r.Model != radar.LifecycleModel || r.Baseline || f.Decision != (radar.Decision{Model: radar.RecommendationModel, Lifecycle: "maintain"}) || f.Proposal != nil || !f.MissingDecisionMaterial || !f.ReviewRequired {
 			t.Fatalf("metadata-only switch lost historical state: %#v", f)
 		}
 		if format != "json" && !strings.Contains(strings.SplitN(text, "\n<!-- tech-radar:snapshot\n", 2)[0], "Needs decision") {

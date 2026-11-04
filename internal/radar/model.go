@@ -40,6 +40,8 @@ type LanguageStat struct {
 }
 
 type Decision struct {
+	// Model records the source semantics when a decision crosses report models.
+	Model     Model  `json:"model,omitempty"`
 	Name      string `json:"name,omitempty"`
 	Quadrant  string `json:"quadrant,omitempty"`
 	Ring      string `json:"ring,omitempty"`

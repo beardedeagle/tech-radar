@@ -25,6 +25,8 @@ The adjacent evidence file retains source locations and history for findings tha
 
 Schema-1 reports and full self-contained exports remain readable. Current reports use schema 2, including the selected `model`, optional `view`, and lifecycle `baseline` metadata. Omitted model metadata in older reports means `recommendation`. Newly recognized package aliases retain their old raw package IDs when those IDs already exist in saved reports, including their decisions and exclusions.
 
+A saved decision may include its own `model` to retain source semantics across report-model switches. This optional field survives full and compact snapshots and subsequent replay. Legacy decisions without it use their saved report model. Older lifecycle exports carrying recommendation free-text notes or recommendation rings remain readable. Reading a saved report preserves its existing metadata and checksums.
+
 Omitted view metadata uses table for lifecycle and radar for recommendation. Generation inherits the previous view only within the same model. A view-only change preserves decisions, evidence, and placement history.
 
 Lifecycle findings retain `missing_decision_material` separately from source presence and evidence changes, and compact snapshots preserve that review state. A saved initial baseline becomes a subsequent generation when passed as `--previous`.

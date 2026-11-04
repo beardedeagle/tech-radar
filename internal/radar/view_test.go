@@ -182,9 +182,9 @@ func TestLifecycleTablePreservesCarriedLegacyNotes(t *testing.T) {
 				t.Run(note+"/"+format+"/"+fmt.Sprint(compact), func(t *testing.T) {
 					data := renderTestExport(t, r, format, compact)
 					body := strings.SplitN(string(data), snapshotStart, 2)[0]
-					want := "<br>Lifecycle: " + tableText(note)
+					want := "<br>Historical lifecycle note: " + tableText(note)
 					if format == "html" {
-						want = "<p>Lifecycle: " + html.EscapeString(note) + "</p>"
+						want = "<p><strong>Historical lifecycle note:</strong> " + html.EscapeString(note) + "</p>"
 					}
 					if !strings.Contains(body, want) || !strings.Contains(body, "Needs decision") {
 						t.Fatalf("visible body omitted exact legacy note %q", want)
