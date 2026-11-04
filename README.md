@@ -17,6 +17,8 @@ just build
 ./tech-radar generate --repo /path/to/repo --format html --out RADAR.html
 ```
 
+Use `just build-release` for a smaller binary without debugging symbols.
+
 Open `RADAR.html` in a browser. Hover or focus a marker for details and select its number to inspect the entry. The report follows system light or dark appearance and includes an explicit theme choice.
 
 Commit the report and its linked `RADAR.evidence.<sha256>.json` file. The default recommendation view uses a radar in HTML and a matrix with findings in Markdown. Lifecycle defaults to a decision table. Use `--view radar|table` to choose either layout. JSON keeps the full report. `--self-contained` embeds evidence in Markdown or HTML when a one-file export is needed.

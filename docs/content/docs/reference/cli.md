@@ -14,7 +14,7 @@ tech-radar catalog
 tech-radar version
 ```
 
-Top-level `help`, `--help`, and `-h` print usage. Each main command accepts `--help`. Generate, scan, discover, and check reject unexpected positional arguments.
+Run `tech-radar --help` for command descriptions and runnable first-report examples. Use `tech-radar help generate` or `tech-radar generate --help` for that command's options, defaults and examples. Every command also accepts `-h`. Help goes to stdout; errors go to stderr and return a nonzero exit code. Generate, scan, discover, and check reject unexpected positional arguments.
 
 ## Generate and scan
 

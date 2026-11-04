@@ -102,7 +102,7 @@ func TestDecisionTableGroupsMembersAndEscapesSuppliedText(t *testing.T) {
 	retiring.Lifecycle = "Retire"
 	prior := buildTestReport(t, inv, Policy{Model: LifecycleModel, Rules: map[string]Decision{"react": d, "npm:@radix-ui/react-dialog": retiring}}, nil, "Example", BuildOptions{})
 	r := buildTestReport(t, inv, Policy{Model: LifecycleModel, Rules: map[string]Decision{"react": d, "npm:@radix-ui/react-dialog": d}}, &prior, "Example", BuildOptions{})
-	groups := decisionGroups(r, false)
+	groups := decisionGroups(r)
 	count := 0
 	for _, group := range groups {
 		for _, f := range group.Findings {
@@ -114,8 +114,8 @@ func TestDecisionTableGroupsMembersAndEscapesSuppliedText(t *testing.T) {
 			}
 		}
 	}
-	if count != len(r.Findings) {
-		t.Fatalf("table omitted or duplicated members: %d of %d", count, len(r.Findings))
+	if count != 2 {
+		t.Fatalf("table must disclose both React family members: got %d", count)
 	}
 	for _, format := range []string{"markdown", "html"} {
 		for _, compact := range []bool{false, true} {
@@ -128,7 +128,7 @@ func TestDecisionTableGroupsMembersAndEscapesSuppliedText(t *testing.T) {
 			if !strings.Contains(body, memberNote) || !strings.Contains(body, "Placement unchanged") {
 				t.Fatalf("%s compact=%v hid member movement behind unchanged family placement", format, compact)
 			}
-			for _, value := range []string{"Hold", "2026-11-03", "npm:@radix-ui/react-dialog", "Needs decision"} {
+			for _, value := range []string{"Hold", "2026-11-03", "npm:@radix-ui/react-dialog"} {
 				if !strings.Contains(body, value) {
 					t.Fatalf("%s compact=%v omitted %s", format, compact, value)
 				}
@@ -158,22 +158,49 @@ func TestDecisionTableGroupsMembersAndEscapesSuppliedText(t *testing.T) {
 	}
 }
 
-func TestCompactTableKeepsExistingRecommendationHighlights(t *testing.T) {
+func TestDecisionTableKeepsGroupedMainFindings(t *testing.T) {
 	root := t.TempDir()
-	fixture(t, root, "package.json", `{"dependencies":{"react":"19","unrecognized-helper":"1"}}`)
+	fixture(t, root, "package.json", `{"dependencies":{"react":"19","@radix-ui/react-dialog":"1","unrecognized-helper":"1"}}`)
 	inv := scanTestRepository(t, root, ScanOptions{})
-	r := buildTestReport(t, inv, Policy{}, nil, "", BuildOptions{View: TableView})
-	for _, concise := range []bool{false, true} {
-		count := 0
-		for _, group := range decisionGroups(r, concise) {
-			count += len(group.Findings)
-		}
-		if concise && count != len(r.Highlights) {
-			t.Fatal("compact table changed prioritized highlights")
-		}
-		if !concise && count <= len(r.Highlights) {
-			t.Fatal("full table omitted supporting observation")
-		}
+	for _, model := range []Model{RecommendationModel, LifecycleModel} {
+		t.Run(string(model), func(t *testing.T) {
+			r := buildTestReport(t, inv, Policy{}, nil, "", BuildOptions{Model: model, View: TableView})
+			if len(r.Highlights) != 1 || r.Highlights[0].ID != "react" || !reflect.DeepEqual(r.Highlights[0].Members, []string{"npm:@radix-ui/react-dialog", "react"}) {
+				t.Fatalf("summary must contain one React family: %+v", r.Highlights)
+			}
+			for _, format := range []string{"html", "markdown"} {
+				for _, compact := range []bool{false, true} {
+					data := renderTestExport(t, r, format, compact)
+					body := strings.SplitN(string(data), snapshotStart, 2)[0]
+					if strings.Contains(body, "unrecognized-helper") {
+						t.Fatalf("%s compact=%v promoted a supporting dependency to a table row", format, compact)
+					}
+					header := "1 entries"
+					if format == "markdown" && compact {
+						header = "1 main findings"
+					}
+					if !strings.Contains(body, header) {
+						t.Fatalf("%s compact=%v header must count grouped rows", format, compact)
+					}
+					if model == LifecycleModel && !strings.Contains(body, "Needs decision") {
+						t.Fatal("unplaced family lost its pending lifecycle state")
+					}
+					recovered := readTestReport(t, data)
+					helper := finding(t, Inventory{Findings: recovered.Findings}, "npm:unrecognized-helper")
+					if len(recovered.Findings) != 3 || helper.EvidenceCount != 1 || (!compact && len(helper.Evidence) != 1) {
+						t.Fatal("summary discarded the supporting dependency's saved evidence")
+					}
+				}
+			}
+			d := Decision{Scope: "application", Rationale: "Team decision", Ring: "Caution", Status: "proposed"}
+			if model == LifecycleModel {
+				d.Ring, d.Lifecycle = "", "Hold"
+			}
+			withDecision := buildTestReport(t, inv, Policy{Model: model, Rules: map[string]Decision{"npm:unrecognized-helper": d}}, nil, "", BuildOptions{})
+			if len(withDecision.Highlights) != 2 || finding(t, Inventory{Findings: withDecision.Highlights}, "npm:unrecognized-helper").Decision != d {
+				t.Fatal("summary hid an explicit decision on a supporting dependency")
+			}
+		})
 	}
 }
 

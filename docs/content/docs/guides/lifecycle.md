@@ -83,6 +83,8 @@ A reference can be a repository documentation path, ADR identifier, PR URL, Driv
 
 Open `LIFECYCLE.html`. The default table groups entries by quadrant and technology family, with colored state badges, scope, owner, decision reference, review date, and changes or review reasons. Native disclosure controls expose available evidence and grouped members. Proposed decisions leave approval fields unset. The table supports keyboard access and light or dark appearance.
 
+Both views show the same architectural and workflow choices, plus any technologies with explicit team decisions. Supporting dependencies stay in the full evidence file. Using `--self-contained` embeds that evidence without adding inventory rows to the table.
+
 No `--previous` means this is the initial lifecycle baseline. React appears in Experiment and TypeScript in Hold. Missing TypeScript decision material creates no missing-material review gap on this generation. Proposed status still requires review. Candidates with no lifecycle placement stay in Needs decision, and source absence or other review reasons still apply.
 
 Commit the report and its linked evidence file when the inputs are ready for your repository's review process. Keep private decision material in authorized storage.

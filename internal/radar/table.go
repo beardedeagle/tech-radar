@@ -11,22 +11,8 @@ type tableGroup struct {
 	Findings []Finding
 }
 
-func decisionGroups(r Report, concise bool) []tableGroup {
+func decisionGroups(r Report) []tableGroup {
 	rows := append([]Finding(nil), r.Highlights...)
-	if !concise {
-		included := map[string]bool{}
-		for _, f := range rows {
-			included[f.ID] = true
-			for _, id := range f.Members {
-				included[id] = true
-			}
-		}
-		for _, f := range r.Findings {
-			if !included[f.ID] {
-				rows = append(rows, f)
-			}
-		}
-	}
 	sort.SliceStable(rows, func(i, j int) bool {
 		if rows[i].FamilyID != rows[j].FamilyID {
 			return rows[i].FamilyID < rows[j].FamilyID
@@ -116,7 +102,7 @@ func tableText(s string) string {
 func markdownDecisionTable(b *strings.Builder, r Report, concise bool) {
 	b.WriteString("\n## Decisions\n\n")
 	byID := findingsByID(r)
-	for _, group := range decisionGroups(r, concise) {
+	for _, group := range decisionGroups(r) {
 		fmt.Fprintf(b, "### %s\n\n| Technology / family | State | Scope | Owner | Decision reference | Reviewed | Changes / review | Evidence / members |\n|---|---|---|---|---|---|---|---|\n", tableText(group.Quadrant))
 		for _, f := range group.Findings {
 			d := r.Model.displayDecision(f)

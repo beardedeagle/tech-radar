@@ -12,6 +12,8 @@ just build
 ./tech-radar version
 ```
 
+Use `just build-release` for a smaller binary. It disables CGO, uses pure Go networking and user lookup, and strips symbols and debugging information. Bounds checks stay enabled. The build targets your current platform; set `GOOS` and `GOARCH` to cross-compile.
+
 The version command identifies the CLI and its pinned language-counting engine:
 
 ```text
