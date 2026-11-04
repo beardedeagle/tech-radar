@@ -76,12 +76,12 @@ func TestFamilyPlacementSurvivesRepresentativeReplacement(t *testing.T) {
 	next := Finding{ID: "cargo:tokio-stream", FamilyID: "rust-async", GroupComponent: "service", Quadrant: old.Quadrant, Members: []string{"cargo:tokio-stream"}, Proposal: &Decision{Ring: "Trial"}}
 	prior := Report{Highlights: []Finding{old}}
 	report := Report{Highlights: []Finding{next}}
-	comparePlacements(&report, &prior)
+	comparePlacements(&report, &prior, GroupingRules{})
 	if got := report.Highlights[0].PlacementChange; got == nil || got.Kind != "moved-in" {
 		t.Fatalf("family lost comparison: %+v", got)
 	}
 	report.Highlights[0].GroupComponent = "other"
-	comparePlacements(&report, &prior)
+	comparePlacements(&report, &prior, GroupingRules{})
 	if got := report.Highlights[0].PlacementChange; got == nil || got.Kind != "new" {
 		t.Fatalf("cross-component family matched: %+v", got)
 	}
@@ -275,7 +275,7 @@ func TestMovedComponentDoesNotMatchOldFamilyMembers(t *testing.T) {
 	next.GroupComponent = "service-b"
 	r := Report{Highlights: []Finding{next}}
 	prior := Report{Highlights: []Finding{old}}
-	comparePlacements(&r, &prior)
+	comparePlacements(&r, &prior, GroupingRules{})
 	if c := r.Highlights[0].PlacementChange; c == nil || c.Kind != "new" {
 		t.Fatalf("component change ignored: %+v", c)
 	}

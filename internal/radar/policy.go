@@ -310,6 +310,6 @@ func BuildWithOptions(inv Inventory, policy Policy, previous *Report, name strin
 	sort.Strings(report.Excluded)
 	sort.Strings(report.Warnings)
 	synthesizeWithGrouping(&report, grouping)
-	comparePlacements(&report, previous)
+	comparePlacements(&report, previous, grouping)
 	return report, nil
 }

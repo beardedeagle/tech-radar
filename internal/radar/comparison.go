@@ -8,7 +8,7 @@ import (
 // comparePlacements uses the previous displayed family placement when present.
 // Compact reports without their evidence companion may lack inferred placements;
 // that missing history must not be described as an unchanged placement.
-func comparePlacements(r *Report, previous *Report) {
+func comparePlacements(r *Report, previous *Report, grouping GroupingRules) {
 	prior, highlights := map[string]Finding{}, map[string]Finding{}
 	families := map[string][]Finding{}
 	if previous != nil {
@@ -48,11 +48,15 @@ func comparePlacements(r *Report, previous *Report) {
 		return
 	}
 	replay := previous != nil && samePlacementInputs(*r, *previous, prior, highlights)
-	// Split lifecycle members have no family metadata of their own. Their
-	// repository evidence must still place them in the previous group's component.
+	// Split lifecycle members have no family metadata of their own. Component
+	// families still require matching evidence ownership, including root components.
 	memberComponents := map[string]string{}
+	familyScopes := map[string]string{}
 	if r.Model == LifecycleModel {
 		memberComponents = componentOwners(findingsByID(*r))
+		for _, family := range grouping.families {
+			familyScopes[family.ID] = family.Scope
+		}
 	}
 	for i := range r.Findings {
 		f := &r.Findings[i]
@@ -85,7 +89,8 @@ func comparePlacements(r *Report, previous *Report) {
 				if !compatibleFamily(*f, old) {
 					continue
 				}
-				if r.Model == LifecycleModel && f.FamilyID == "" && len(f.Members) == 1 && old.GroupComponent != "" && memberComponents[f.ID] != old.GroupComponent {
+				if r.Model == LifecycleModel && f.FamilyID == "" && len(f.Members) == 1 &&
+					familyScopes[old.FamilyID] != "repository" && old.GroupComponent != "" && memberComponents[f.ID] != old.GroupComponent {
 					continue
 				}
 				for _, member := range f.Members {

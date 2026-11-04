@@ -64,7 +64,7 @@ func TestAmbiguousFamilyHistoryDoesNotChooseASubgroup(t *testing.T) {
 	for _, old := range [][]Finding{{a, b}, {b, a}} {
 		prior := Report{Model: LifecycleModel, Highlights: old}
 		r := Report{Model: LifecycleModel, Highlights: []Finding{next}}
-		comparePlacements(&r, &prior)
+		comparePlacements(&r, &prior, GroupingRules{})
 		if c := r.Highlights[0].PlacementChange; c != nil {
 			t.Fatalf("ambiguous family invented a prior placement: %+v", c)
 		}
@@ -72,20 +72,45 @@ func TestAmbiguousFamilyHistoryDoesNotChooseASubgroup(t *testing.T) {
 }
 
 func TestLifecycleSplitMemberDoesNotReuseAnotherComponentPlacement(t *testing.T) {
+	for _, from := range []string{"app-a", "."} {
+		t.Run(from, func(t *testing.T) {
+			root := t.TempDir()
+			manifest := `{"dependencies":{"react":"19","@radix-ui/react-dialog":"1"}}`
+			fixture(t, root, from+"/package.json", manifest)
+			d := Decision{Lifecycle: "Adopt", Scope: "UI", Rationale: "Team decision", Status: "approved", Owner: "UI team", Reference: "ADR-1", Reviewed: "2026-11-03"}
+			p := Policy{Model: LifecycleModel, Rules: map[string]Decision{"react": d, "npm:@radix-ui/react-dialog": d}}
+			prior := buildTestReport(t, scanTestRepository(t, root, ScanOptions{}), p, nil, "", BuildOptions{})
+			fixture(t, root, from+"/package.json", `{}`)
+			fixture(t, root, "app-b/package.json", manifest)
+			d.Lifecycle = "Retire"
+			p.Rules["npm:@radix-ui/react-dialog"] = d
+			next := buildTestReport(t, scanTestRepository(t, root, ScanOptions{}), p, &prior, "", BuildOptions{})
+			f := finding(t, Inventory{Findings: next.Highlights}, "npm:@radix-ui/react-dialog")
+			if c := f.PlacementChange; c == nil || c.Kind != "new" || c.PreviousRing != "" {
+				t.Fatalf("split member reused a different component's group placement: %+v", c)
+			}
+		})
+	}
+}
+
+func TestLifecycleRepositoryFamilySplitKeepsPlacement(t *testing.T) {
 	root := t.TempDir()
-	manifest := `{"dependencies":{"react":"19","@radix-ui/react-dialog":"1"}}`
-	fixture(t, root, "app-a/package.json", manifest)
-	d := Decision{Lifecycle: "Adopt", Scope: "UI", Rationale: "Team decision", Status: "approved", Owner: "UI team", Reference: "ADR-1", Reviewed: "2026-11-03"}
-	p := Policy{Model: LifecycleModel, Rules: map[string]Decision{"react": d, "npm:@radix-ui/react-dialog": d}}
-	prior := buildTestReport(t, scanTestRepository(t, root, ScanOptions{}), p, nil, "", BuildOptions{})
-	fixture(t, root, "app-a/package.json", `{}`)
-	fixture(t, root, "app-b/package.json", manifest)
+	fixture(t, root, "app-a/package.json", `{"dependencies":{"@aws-sdk/client-s3":"3","@aws-sdk/client-sqs":"3"}}`)
+	inv := scanTestRepository(t, root, ScanOptions{})
+	d := Decision{Lifecycle: "Adopt", Scope: "Application", Rationale: "Team decision", Status: "approved", Owner: "App team", Reference: "ADR-1", Reviewed: "2026-11-03"}
+	p := Policy{Model: LifecycleModel, Rules: map[string]Decision{"npm:@aws-sdk/client-s3": d, "npm:@aws-sdk/client-sqs": d}}
+	prior := buildTestReport(t, inv, p, nil, "", BuildOptions{})
+	if len(prior.Highlights) != 1 || prior.Highlights[0].FamilyID != "aws" || prior.Highlights[0].GroupComponent != "." || !contains(prior.Highlights[0].Members, "npm:@aws-sdk/client-sqs") {
+		t.Fatal("nested SDKs did not form the repository-scoped AWS family")
+	}
 	d.Lifecycle = "Retire"
-	p.Rules["npm:@radix-ui/react-dialog"] = d
-	next := buildTestReport(t, scanTestRepository(t, root, ScanOptions{}), p, &prior, "", BuildOptions{})
-	f := finding(t, Inventory{Findings: next.Highlights}, "npm:@radix-ui/react-dialog")
-	if c := f.PlacementChange; c == nil || c.Kind != "new" || c.PreviousRing != "" {
-		t.Fatalf("split member reused a different component's group placement: %+v", c)
+	p.Rules["npm:@aws-sdk/client-sqs"] = d
+	next := buildTestReport(t, inv, p, &prior, "", BuildOptions{})
+	for _, rows := range [][]Finding{next.Findings, next.Highlights} {
+		f := finding(t, Inventory{Findings: rows}, "npm:@aws-sdk/client-sqs")
+		if c := f.PlacementChange; c == nil || c.Kind != "moved-out" || c.PreviousRing != "Adopt" {
+			t.Fatalf("repository-scoped split lost the member's prior placement: %+v", c)
+		}
 	}
 }
 
