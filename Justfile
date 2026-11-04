@@ -70,6 +70,10 @@ build:
     mkdir -p output
     go build -trimpath -o "{{ binary }}" ./cmd/tech-radar
 
+# Build a smaller native binary without CGO or debugging symbols.
+build-release:
+    CGO_ENABLED=0 go build -trimpath -tags "netgo osusergo" -ldflags="-s -w -buildid=" -o "{{ binary }}" ./cmd/tech-radar
+
 version: build
     "./{{ binary }}" version
 

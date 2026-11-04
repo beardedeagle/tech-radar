@@ -42,16 +42,15 @@ type repositoryInput struct {
 // Rebuilding doesn't refresh repo membership or revisions.
 func discover(args []string, stdout, stderr io.Writer) (err error) {
 	flags := flag.NewFlagSet("discover", flag.ContinueOnError)
-	flags.SetOutput(stderr)
 	var paths repoPaths
-	flags.Var(&paths, "repo", "local repository directory (repeatable)")
-	org := flags.String("org", "", "GitHub organization on github.com")
-	list := flags.String("repos", "", "repository list JSON file (schema 1)")
-	from := flags.String("from", "", "rebuild a saved context file offline")
-	rulesPath := flags.String("rules", "", "custom detection rules JSON file")
-	out := flags.String("out", "-", "context JSON file, or - for stdout")
+	flags.Var(&paths, "repo", "inspect local repository at `PATH` (repeatable)")
+	org := flags.String("org", "", "inspect accessible repositories in GitHub organization `NAME`")
+	list := flags.String("repos", "", "read repositories from schema-1 JSON `FILE`")
+	from := flags.String("from", "", "rebuild saved context from `FILE` without rescanning")
+	rulesPath := flags.String("rules", "", "add detection patterns from JSON `FILE`")
+	out := flags.String("out", "-", "write context JSON to `FILE`, or - for stdout")
 	force := flags.Bool("force", false, "replace an unedited generated report")
-	if err := flags.Parse(args); err != nil {
+	if err := parseCommandFlags(flags, args, stdout); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return nil
 		}

@@ -17,20 +17,19 @@ import (
 // Collection/input/output failures are errors; violations/gaps are exit results.
 func checkCommand(args []string, stdout, stderr io.Writer) (code int, err error) {
 	flags := flag.NewFlagSet("check", flag.ContinueOnError)
-	flags.SetOutput(stderr)
 	var paths repoPaths
-	flags.Var(&paths, "repo", "local repository directory (repeatable)")
-	org := flags.String("org", "", "GitHub organization on github.com")
-	list := flags.String("repos", "", "repository list JSON file")
-	from := flags.String("from", "", "saved context or check JSON; no refresh")
-	policyPath := flags.String("policy", "", "approved enforcement policy JSON (required)")
-	exceptionsPath := flags.String("exceptions", "", "approved policy-bound exceptions JSON")
-	baselinePath := flags.String("baseline", "", "previous context or check JSON for drift/existing-only rules")
-	rulesPath := flags.String("rules", "", "custom detection rules JSON")
-	asOf := flags.String("as-of", time.Now().UTC().Format(time.DateOnly), "evaluation date YYYY-MM-DD (default UTC today)")
-	out := flags.String("out", "-", "check JSON output, or - for stdout")
+	flags.Var(&paths, "repo", "inspect local repository at `PATH` (repeatable)")
+	org := flags.String("org", "", "inspect accessible repositories in GitHub organization `NAME`")
+	list := flags.String("repos", "", "read repositories from schema-1 JSON `FILE`")
+	from := flags.String("from", "", "check saved context or check JSON `FILE` without rescanning")
+	policyPath := flags.String("policy", "", "read approved enforcement policy from JSON `FILE` (required)")
+	exceptionsPath := flags.String("exceptions", "", "read approved, policy-bound exceptions from JSON `FILE`")
+	baselinePath := flags.String("baseline", "", "compare with previous context or check JSON `FILE` for drift and existing-only rules")
+	rulesPath := flags.String("rules", "", "add detection patterns from JSON `FILE`")
+	asOf := flags.String("as-of", time.Now().UTC().Format(time.DateOnly), "evaluate approvals on `YYYY-MM-DD` (UTC today unless supplied)")
+	out := flags.String("out", "-", "write check JSON to `FILE`, or - for stdout")
 	force := flags.Bool("force", false, "replace an unedited generated export")
-	if err := flags.Parse(args); err != nil {
+	if err := parseCommandFlags(flags, args, stdout); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return 0, nil
 		}

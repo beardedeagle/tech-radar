@@ -57,6 +57,8 @@ Supply repository decision paths or the Drive documents or folders the agent may
 
 Expect exact repository paths and lines or a Drive document URL and section, the source's stated status, the decision's scope, and any unresolved approval authority. A linked document can describe an experiment or a draft. Its existence alone does not establish adoption. Preserve approved inputs separately from proposed replacements, and keep private document content in authorized storage.
 
+Lifecycle proposals should explain what to use for new work, what to evaluate, what to contain, or what to retire. The agent first reviews every main choice with its current role, scope, documented direction, proposed direction, technical reasons and open questions. Missing ADRs do not prevent a reasoned proposal, but the recommendation must be identified as an inference. A component instruction to reuse its stack is one shared decision, not a lifecycle recommendation for every dependency. Repeated states are fine when independently justified.
+
 Without `--previous`, missing decision material is an ordinary initial-baseline fact. It creates no missing-material review gap, while proposed status, missing placement, source absence, and other review reasons still apply. Every lifecycle run with `--previous` flags included technologies without decision references. An enforcement `--baseline` belongs to `check` and has a separate role. The [lifecycle walkthrough](lifecycle.md) shows both generations.
 
 ## Validation

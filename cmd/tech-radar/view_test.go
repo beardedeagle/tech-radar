@@ -78,7 +78,8 @@ func TestCLIRejectsInvalidViewAndKeepsFormatSeparate(t *testing.T) {
 		call(t, 1, command, "--repo", repo, "--view", "grid")
 		call(t, 1, command, "--repo", repo, "--format", "table")
 	}
-	if !strings.Contains(call(t, 0, "--help"), "--view radar|table") {
+	help := call(t, 0, "generate", "--help")
+	if !strings.Contains(help, "--view VIEW") || !strings.Contains(help, "radar or table") {
 		t.Fatal("view selection absent from CLI help")
 	}
 }

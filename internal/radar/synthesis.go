@@ -225,7 +225,9 @@ func synthesizeWithGrouping(r *Report, grouping GroupingRules) {
 				f.EvidenceChanged, f.ReviewRequired = true, true
 			}
 		}
-		if r.Model != LifecycleModel && f.Assessment.Significance != "system_defining" && f.Assessment.Significance != "workflow_enabling" && f.Decision == (Decision{}) {
+		// A family decision cannot cover members without their own decision.
+		needsMemberDecision := r.Model == LifecycleModel && byID[roots[id]].Decision != (Decision{})
+		if f.Assessment.Significance != "system_defining" && f.Assessment.Significance != "workflow_enabling" && f.Decision == (Decision{}) && !needsMemberDecision {
 			continue
 		}
 		// Reference original findings instead of duplicating their source evidence.

@@ -48,6 +48,24 @@ Read repository architecture docs, ADRs, decision logs and linked PR records rel
 
 For each proposed decision, retain the finding ID, model, lifecycle or recommendation placement, scope, rationale, source status and precise evidence. Cite repository-relative paths and line numbers, PR URLs and relevant comments, or Drive document URLs and section headings. Record document revision or review date when available. Distinguish inaccessible sources, drafts, proposals, approvals and superseded decisions. Explain contradictions and unknown authority. A link or a scanner hit alone establishes neither adoption nor approval.
 
+### Build lifecycle proposals
+
+Assess all main architectural and workflow choices in the requested target. Before writing policy JSON, present a review table with these columns:
+
+- Finding or family and its member IDs.
+- Current role and actual component scope, with source locations.
+- Documented direction and source status, or no direction found.
+- Proposed future-use direction and technology-specific technical reasons.
+- Uncertainty, contradictory evidence and the question that would change the recommendation.
+
+A proposal answers what the team should do next. Adopt recommends use for new work within its stated scope. Experiment proposes a bounded evaluation with a question to resolve. Hold retains existing use while directing new work elsewhere. Retire proposes ending use with an exit condition or replacement. Tie the recommendation to a verified application requirement or implementation boundary, and explain the fit, constraints and tradeoffs. Observed use, general library capabilities, hypothetical requirements or "continue its current role" alone do not establish that fit.
+
+An instruction to reuse an existing stack is one shared component decision. Record that instruction once and associate its technologies with it; it does not select a lifecycle state. Assess each technology's future-use direction separately. The scope of a component decision stays with that component.
+
+When a lifecycle decision is documented, distinguish that recorded intent from your technical recommendation. When decision material is missing, a reasoned technical proposal may still be marked proposed; identify it as an inference and give its basis. If the evidence and technical assessment cannot support a direction, keep the finding unplaced and name the missing decision in the review table. Omit unresolved IDs from policy rules. Missing material on a first baseline remains exempt from missing-material gaps, as described below.
+
+Repeated states are valid when their reasons stand on their own. Do not manufacture different states for variety. If a finding combines incompatible scopes or member directions, explain the conflict and the input refinement needed to represent it. Do not flatten those differences into one policy rule. Keep evidence citations in the review; populate a policy decision reference only when the cited material actually records that decision.
+
 Missing material is normal on an initial lifecycle baseline without `--previous`. It creates no missing-material gap on that generation. Proposed status, missing lifecycle placement, source absence and other review reasons still apply. Every lifecycle generation with `--previous`, including unchanged input or a previous recommendation report, flags included technologies without decision references. Keep missing decision material separate from source absence and enforcement gaps.
 
 Draft display decisions in a separate proposed policy file. Preserve approved inputs and approval metadata. Obtain review of substantive lifecycle, recommendation, detection and grouping proposals before using them. Never invent an owner, reference, review date or approval. Keep private source content and references in the user's authorized storage, outside this public tool or plugin.

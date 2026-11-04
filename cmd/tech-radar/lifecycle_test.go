@@ -86,7 +86,8 @@ func TestCLIModelSelectionAndInvalidCombinations(t *testing.T) {
 	if err != nil || r.Baseline || !r.Findings[0].MissingDecisionMaterial || r.Findings[0].Proposal != nil {
 		t.Fatalf("old-model previous missed review gap: %v", err)
 	}
-	if !strings.Contains(call(t, 0, "--help"), "--model recommendation|lifecycle") {
+	help := call(t, 0, "generate", "--help")
+	if !strings.Contains(help, "--model MODEL") || !strings.Contains(help, "recommendation or lifecycle") {
 		t.Fatal("model help missing")
 	}
 }
