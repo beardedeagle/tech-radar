@@ -24,6 +24,8 @@ Both commands scan one local repository and produce the same report model. `gene
 | --- | --- | --- |
 | `--repo PATH` | Required readable repository directory. | None |
 | `--name NAME` | Report title, overriding the display policy's repository name. | Policy name, saved report name, or `Repository` |
+| `--model MODEL` | `recommendation` or `lifecycle`. Explicit CLI and policy models must agree. | Policy model, previous report model, or `recommendation` |
+| `--view VIEW` | `radar` or `table`, independently of model and encoding. | Same-model previous view, otherwise `table` for lifecycle or `radar` for recommendation |
 | `--format FORMAT` | `markdown`, `html`, or `json`. | Markdown for generate; JSON for scan |
 | `--out FILE` | Output path, or `-` for stdout. | `-` |
 | `--policy FILE` | Display decisions, not an enforcement standard. | No new decisions |
@@ -36,7 +38,13 @@ Both commands scan one local repository and produce the same report model. `gene
 
 Markdown and HTML written to files use a compact document and adjacent evidence JSON by default. Stdout and JSON contain full state. `--self-contained` changes Markdown and HTML file output only.
 
-Saved decisions, exclusions, and display numbers carry forward through `--previous`. Explicit current policy replaces a whole saved decision for each supplied ID. Required rules, grouping, and context inputs must be supplied again. [Files and history](files.md) describes replay and write behavior.
+`--model` selects the meaning of placements. `--view` selects the layout. `--format` selects the output encoding. An explicit view overrides inheritance. Without one, a valid same-model previous view carries forward. A model switch uses the new model's default view. Policy has no view field.
+
+Lifecycle places entries only from supplied `lifecycle` decisions. An initial lifecycle run without `--previous` records a baseline. Every lifecycle run with `--previous` flags included technologies without decision references, even with unchanged input or a prior recommendation report. This review gap is separate from `check` enforcement. See the [lifecycle walkthrough](../guides/lifecycle.md).
+
+Changing only the view preserves decisions, evidence, and placement history. Passing an initial lifecycle baseline as `--previous` still activates missing-material review gaps. HTML table view uses state badges and native evidence/member disclosures. Markdown table view uses one decision row per entry, while Markdown radar view keeps the quadrant/ring matrix. JSON retains full report data and the selected view.
+
+Saved decisions, exclusions, and display numbers carry forward through `--previous`. Explicit current policy replaces a whole saved decision for each supplied ID. An explicit model switch starts a new placement comparison. Carried approvals require explicit target-model replacements before they can approve target placements. Incompatible saved records fail with a replacement request. Required rules, grouping, and context inputs must be supplied again. [Files and history](files.md) describes replay and write behavior.
 
 ## Discover
 

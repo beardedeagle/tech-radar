@@ -19,10 +19,7 @@ func TestExtendedManifestDependencies(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			root := t.TempDir()
 			fixture(t, root, tt.name, tt.content)
-			inv, err := Scan(root)
-			if err != nil {
-				t.Fatal(err)
-			}
+			inv := scanTestRepository(t, root, ScanOptions{})
 			foundProfile := false
 			for _, c := range inv.Components {
 				foundProfile = foundProfile || c.Profile == tt.profile
@@ -30,10 +27,7 @@ func TestExtendedManifestDependencies(t *testing.T) {
 			if !foundProfile {
 				t.Fatalf("no %s profile: %+v", tt.profile, inv.Components)
 			}
-			report, err := Build(inv, Policy{}, nil, "Example")
-			if err != nil {
-				t.Fatal(err)
-			}
+			report := buildTestReport(t, inv, Policy{}, nil, "Example", BuildOptions{})
 			var group *Finding
 			for i := range report.Highlights {
 				if report.Highlights[i].Name == tt.family {

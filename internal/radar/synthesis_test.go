@@ -12,10 +12,7 @@ func TestScanRetainsEveryEvidenceReference(t *testing.T) {
 	for i := range 41 {
 		fixture(t, root, fmt.Sprintf("apps/app%02d/package.json", i), `{"dependencies":{"react":"19"}}`)
 	}
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
 	f := finding(t, inv, "react")
 	if len(f.Evidence) != 41 || f.EvidenceCount != 41 {
 		t.Fatalf("lost occurrence evidence: retained %d of %d", len(f.Evidence), f.EvidenceCount)
@@ -33,14 +30,8 @@ func beamFixture(t *testing.T) string {
 }
 
 func TestNativeSynthesisPopulatesRadarWithoutInventingTeamDecisions(t *testing.T) {
-	inv, err := Scan(beamFixture(t))
-	if err != nil {
-		t.Fatal(err)
-	}
-	r, err := Build(inv, Policy{}, nil, "Demo")
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, beamFixture(t), ScanOptions{})
+	r := buildTestReport(t, inv, Policy{}, nil, "Demo", BuildOptions{})
 	for _, f := range r.Findings {
 		if f.ID == "phoenix" && ring(f) != "Adopt" {
 			t.Fatalf("wired framework has no contextual proposal: %s", ring(f))
@@ -87,15 +78,9 @@ func TestNativeSynthesisPopulatesRadarWithoutInventingTeamDecisions(t *testing.T
 }
 
 func TestExplicitChildDecisionSurvivesGroupingAndReplay(t *testing.T) {
-	inv, err := Scan(beamFixture(t))
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, beamFixture(t), ScanOptions{})
 	d := Decision{Ring: "Caution", Scope: "Demo UI", Rationale: "Team requires migration review", Status: "approved", Owner: "Team", Reference: "PR #2", Reviewed: "2026-10-30"}
-	r, err := Build(inv, Policy{SchemaVersion: 1, Rules: map[string]Decision{"phoenix-liveview": d, "python": {Exclude: true, Rationale: "Helper only"}}}, nil, "Demo")
-	if err != nil {
-		t.Fatal(err)
-	}
+	r := buildTestReport(t, inv, Policy{SchemaVersion: 1, Rules: map[string]Decision{"phoenix-liveview": d, "python": {Exclude: true, Rationale: "Helper only"}}}, nil, "Demo", BuildOptions{})
 	b, err := Render(r, "json")
 	if err != nil {
 		t.Fatal(err)
@@ -120,7 +105,7 @@ func TestExplicitChildDecisionSurvivesGroupingAndReplay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	next, err := Build(inv, Policy{}, &recovered, "")
+	next, err := BuildWithOptions(inv, Policy{}, &recovered, "", BuildOptions{})
 	if err != nil || next.Decisions["phoenix-liveview"] != d || !next.Decisions["python"].Exclude {
 		t.Fatalf("replay lost team state: %v", err)
 	}
@@ -130,14 +115,8 @@ func TestProfilesRespectComponentAndDependencyScope(t *testing.T) {
 	root := beamFixture(t)
 	fixture(t, root, "scripts/package.json", `{"devDependencies":{"react":"19"}}`)
 	fixture(t, root, "web/package.json", `{"dependencies":{"react":"19","@radix-ui/react-dialog":"1","unfamiliar-ui":"2"}}`)
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	r, err := Build(inv, Policy{}, nil, "Demo")
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
+	r := buildTestReport(t, inv, Policy{}, nil, "Demo", BuildOptions{})
 	b, _ := Render(r, "json")
 	var state struct {
 		Components []struct{ Path, Profile string }
@@ -164,15 +143,9 @@ func TestProfilesRespectComponentAndDependencyScope(t *testing.T) {
 }
 
 func TestRootApprovalDoesNotApproveGroupedChildren(t *testing.T) {
-	inv, err := Scan(beamFixture(t))
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, beamFixture(t), ScanOptions{})
 	d := Decision{Ring: "Adopt", Scope: "Phoenix endpoint only", Rationale: "Reviewed endpoint", Status: "approved", Owner: "Team", Reference: "PR #9", Reviewed: "2026-10-30"}
-	r, err := Build(inv, Policy{SchemaVersion: 1, Rules: map[string]Decision{"phoenix": d}}, nil, "Demo")
-	if err != nil {
-		t.Fatal(err)
-	}
+	r := buildTestReport(t, inv, Policy{SchemaVersion: 1, Rules: map[string]Decision{"phoenix": d}}, nil, "Demo", BuildOptions{})
 	b, _ := Render(r, "json")
 	var state struct {
 		Highlights []struct {
@@ -201,14 +174,8 @@ func TestRootApprovalDoesNotApproveGroupedChildren(t *testing.T) {
 func TestNativeQualityToolsFormOneExplainableFamily(t *testing.T) {
 	root := beamFixture(t)
 	fixture(t, root, "tools/mix.exs", "defp deps do\n[\n{:phoenix, \"1\"},\n{:credo, \"1\", only: :dev},\n{:dialyxir, \"1\", only: :dev},\n{:sobelow, \"1\", only: :dev}\n]\nend\n")
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	r, err := Build(inv, Policy{}, nil, "Demo")
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
+	r := buildTestReport(t, inv, Policy{}, nil, "Demo", BuildOptions{})
 	b, _ := Render(r, "json")
 	var state struct {
 		Highlights []struct {
@@ -232,14 +199,8 @@ func TestReactBuildDependenciesDoNotDemoteAuthoredLanguageAndStyles(t *testing.T
 	fixture(t, root, "package.json", `{"dependencies":{"react":"19"},"devDependencies":{"typescript":"5","tailwindcss":"3"}}`)
 	fixture(t, root, "src/app.tsx", "import React from 'react';\nexport const App = () => <main>Hello</main>;\n")
 	fixture(t, root, "src/index.css", "@tailwind base;\n@tailwind components;\n@tailwind utilities;\n")
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	r, err := Build(inv, Policy{}, nil, "Web")
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
+	r := buildTestReport(t, inv, Policy{}, nil, "Web", BuildOptions{})
 	b, _ := Render(r, "json")
 	var state struct {
 		Findings []struct {
@@ -260,14 +221,8 @@ func TestReactBuildDependenciesDoNotDemoteAuthoredLanguageAndStyles(t *testing.T
 func TestUnrecognizedEcosystemIsNotAutomaticallySupportingCode(t *testing.T) {
 	root := t.TempDir()
 	fixture(t, root, "app.py", "def main():\n    print('service')\n")
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	r, err := Build(inv, Policy{}, nil, "Unknown")
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
+	r := buildTestReport(t, inv, Policy{}, nil, "Unknown", BuildOptions{})
 	b, _ := Render(r, "json")
 	var state struct {
 		Findings []struct {

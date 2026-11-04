@@ -1,6 +1,6 @@
 package radar
 
-const Version = "0.2.1"
+const Version = "0.3.0"
 
 // CounterVersion identifies the pinned language-counting engine in reports.
 const CounterVersion = "scc/v4 v4.1.0"
@@ -40,6 +40,8 @@ type LanguageStat struct {
 }
 
 type Decision struct {
+	// Model preserves source semantics across model switches and legacy defaults.
+	Model     Model  `json:"model,omitempty"`
 	Name      string `json:"name,omitempty"`
 	Quadrant  string `json:"quadrant,omitempty"`
 	Ring      string `json:"ring,omitempty"`
@@ -54,23 +56,25 @@ type Decision struct {
 }
 
 type Finding struct {
-	ID                  string           `json:"id"`
-	Number              int              `json:"number"`
-	Name                string           `json:"name"`
-	Quadrant            string           `json:"quadrant,omitempty"`
-	Evidence            []Evidence       `json:"evidence"`
-	EvidenceCount       int              `json:"evidence_count"`
-	EvidenceFingerprint string           `json:"evidence_fingerprint,omitempty"`
-	Presence            string           `json:"presence"`
-	EvidenceChanged     bool             `json:"evidence_changed"`
-	ReviewRequired      bool             `json:"review_required"`
-	Decision            Decision         `json:"decision"`
-	Assessment          *Assessment      `json:"assessment,omitempty"`
-	Proposal            *Decision        `json:"proposal,omitempty"`
-	Members             []string         `json:"members,omitempty"`
-	PlacementChange     *PlacementChange `json:"placement_change,omitempty"`
-	FamilyID            string           `json:"family_id,omitempty"`
-	GroupComponent      string           `json:"group_component,omitempty"`
+	// MissingDecisionMaterial marks a lifecycle review gap on subsequent generations.
+	MissingDecisionMaterial bool             `json:"missing_decision_material,omitempty"`
+	ID                      string           `json:"id"`
+	Number                  int              `json:"number"`
+	Name                    string           `json:"name"`
+	Quadrant                string           `json:"quadrant,omitempty"`
+	Evidence                []Evidence       `json:"evidence"`
+	EvidenceCount           int              `json:"evidence_count"`
+	EvidenceFingerprint     string           `json:"evidence_fingerprint,omitempty"`
+	Presence                string           `json:"presence"`
+	EvidenceChanged         bool             `json:"evidence_changed"`
+	ReviewRequired          bool             `json:"review_required"`
+	Decision                Decision         `json:"decision"`
+	Assessment              *Assessment      `json:"assessment,omitempty"`
+	Proposal                *Decision        `json:"proposal,omitempty"`
+	Members                 []string         `json:"members,omitempty"`
+	PlacementChange         *PlacementChange `json:"placement_change,omitempty"`
+	FamilyID                string           `json:"family_id,omitempty"`
+	GroupComponent          string           `json:"group_component,omitempty"`
 }
 
 // PlacementChange compares the displayed ring and quadrant with a known prior
@@ -111,12 +115,17 @@ type Inventory struct {
 }
 
 type Policy struct {
+	Model         Model               `json:"model,omitempty"`
 	SchemaVersion int                 `json:"schema_version"`
 	Repository    string              `json:"repository,omitempty"`
 	Rules         map[string]Decision `json:"rules"`
 }
 
 type Report struct {
+	Model Model `json:"model,omitempty"`
+	View  View  `json:"view,omitempty"`
+	// Baseline identifies a lifecycle generation without a previous report.
+	Baseline         bool                `json:"baseline,omitempty"`
 	SchemaVersion    int                 `json:"schema_version"`
 	GeneratorVersion string              `json:"generator_version"`
 	Repository       string              `json:"repository"`

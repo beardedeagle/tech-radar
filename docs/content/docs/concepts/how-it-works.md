@@ -52,17 +52,19 @@ The checklists are maintained candidates. Detecting a Go module does not prove t
 
 A versioned catalog groups runtime companions, framework extensions, SDK modules, platform services, and workflow tools. It respects component ownership. Ambiguous shared findings remain separate.
 
-The main report shows a representative and its members. Original IDs and evidence remain in the full report. A family's proposed placement follows its strongest use evidence, so the proposal does not claim every extension has equal maturity.
+The main report shows a representative and its members. Original IDs and evidence remain in the full report. In the default recommendation model, a family's proposed placement follows its strongest use evidence, so the proposal does not claim every extension has equal maturity. Lifecycle grouping requires matching member decisions. Different lifecycle states, rationales, or approval scopes keep findings separate.
 
 A decision on a member or representative prevents grouping from extending that decision to other findings. Exclusions still apply to their own IDs. Use [explicit grouping definitions](../reference/grouping.md) for relationships the maintained catalog does not know.
 
 ## Proposed placement and approval have different jobs
 
-Adopt, Trial, Assess, and Caution describe a technology's intended use within a scope. The scanner can propose a placement from evidence. Only your recorded policy supplies the team's decision and approval metadata.
+In the default `recommendation` model, Adopt, Trial, Assess, and Caution describe a technology's intended use within a scope. The scanner can propose a placement from evidence. Only your recorded policy supplies the team's decision and approval metadata.
 
 Established source use can suggest Adopt. Configuration can suggest Trial. Declarations or references can suggest Assess. These heuristics are visible suggestions for review. The tool cannot infer that your team has approved an unfamiliar package merely because it appears in many repositories.
 
-Lifecycle is recorded separately. A team can maintain an existing deployment while discouraging new use. The [enforcement standard](../reference/policy.md) expresses that restriction with explicit repository, path, version, or existing-only conditions.
+Recommendation decisions keep lifecycle as separate free text. The optional `lifecycle` model uses Experiment, Adopt, Hold, and Retire as its placements. Evidence seeds candidates, and supplied lifecycle decisions place them. Unplaced candidates stay visible as Needs decision. See the [lifecycle walkthrough](../guides/lifecycle.md) for initial baselines, later review gaps, and model switches.
+
+A team can maintain an existing deployment while discouraging new use. The [enforcement standard](../reference/policy.md) expresses that restriction with explicit repository, path, version, or existing-only conditions.
 
 ## Context carries a checklist between repositories
 

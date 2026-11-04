@@ -21,21 +21,12 @@ func TestRulesAreCanonicalAndIsolatedBetweenRuns(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	first, err := ScanWithRules(root, rulesA)
-	if err != nil {
-		t.Fatal(err)
-	}
-	second, err := ScanWithRules(root, rulesB)
-	if err != nil {
-		t.Fatal(err)
-	}
+	first := scanTestRepository(t, root, ScanOptions{Rules: rulesA})
+	second := scanTestRepository(t, root, ScanOptions{Rules: rulesB})
 	if !reflect.DeepEqual(first, second) {
 		t.Fatal("JSON order or rule order changed effective output")
 	}
-	plain, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	plain := scanTestRepository(t, root, ScanOptions{})
 	for _, f := range plain.Findings {
 		if f.ID == "hubspot" || f.ID == "scheduler" {
 			t.Fatal("run-specific rules leaked into the default scanner")
@@ -46,10 +37,7 @@ func TestRulesAreCanonicalAndIsolatedBetweenRuns(t *testing.T) {
 	}
 	policy := Policy{SchemaVersion: 1, Rules: map[string]Decision{"scheduler": {Ring: "Assess", Scope: "Candidate", Rationale: "Review this integration"}}}
 	first.Findings = nil
-	report, err := Build(first, policy, nil, "Example")
-	if err != nil {
-		t.Fatal(err)
-	}
+	report := buildTestReport(t, first, policy, nil, "Example", BuildOptions{})
 	if len(report.Findings) != 1 || report.Findings[0].Name != "Example scheduler" || report.Findings[0].Presence != "not detected" {
 		t.Fatal("runtime catalog did not support an undetected policy candidate")
 	}
@@ -91,10 +79,7 @@ func TestExplicitRulesCanRecognizeLiteralManifestReferences(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	inv, err := ScanWithRules(root, rules)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{Rules: rules})
 	f := finding(t, inv, "example-platform")
 	if len(f.Evidence) != 1 || f.Evidence[0].Path != "package.json" || f.Evidence[0].Kind != "configuration" {
 		t.Fatal("literal manifest was not recognized as configuration evidence")
@@ -109,31 +94,19 @@ func TestChangedRuntimeClassificationCannotSilentlyReuseApproval(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	inv, err := ScanWithRules(root, rulesA)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{Rules: rulesA})
 	decision := Decision{Ring: "Adopt", Scope: "Existing integration", Rationale: "Team review", Owner: "Team", Status: "approved", Reference: "PR #1", Reviewed: "2026-10-30"}
-	previous, err := Build(inv, Policy{SchemaVersion: 1, Rules: map[string]Decision{"custom-service": decision}}, nil, "Example")
-	if err != nil {
-		t.Fatal(err)
-	}
+	previous := buildTestReport(t, inv, Policy{SchemaVersion: 1, Rules: map[string]Decision{"custom-service": decision}}, nil, "Example", BuildOptions{})
 	rulesB, err := ReadDetectionRules([]byte(`{"schema_version":1,"patterns":[{"id":"custom-service","name":"Renamed tool","quadrant":"Tools","pattern":"Example.Service","detail":"Integration reference"}]}`))
 	if err != nil {
 		t.Fatal(err)
 	}
-	inv, err = ScanWithRules(root, rulesB)
-	if err != nil {
-		t.Fatal(err)
-	}
-	next, err := Build(inv, Policy{}, &previous, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv = scanTestRepository(t, root, ScanOptions{Rules: rulesB})
+	next := buildTestReport(t, inv, Policy{}, &previous, "", BuildOptions{})
 	if next.Decisions["custom-service"] != decision || !next.Findings[0].ReviewRequired {
 		t.Fatal("runtime classification changed the meaning of an unflagged approval")
 	}
-	again, err := Build(inv, Policy{}, &next, "")
+	again, err := BuildWithOptions(inv, Policy{}, &next, "", BuildOptions{})
 	if err != nil || !again.Findings[0].ReviewRequired {
 		t.Fatalf("rerun silently cleared classification review: %v", err)
 	}

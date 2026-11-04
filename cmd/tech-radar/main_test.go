@@ -97,11 +97,11 @@ func TestCompactReplayPreservesApprovalAndRemovedEvidence(t *testing.T) {
 	if compact.Findings[0].Decision.Status != "approved" || len(compact.Findings[0].Evidence) != 0 {
 		t.Fatal("compact decision state is wrong")
 	}
-	inv, err := radar.Scan(repo)
+	inv, err := radar.ScanWithOptions(repo, radar.ScanOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	unchanged, err := radar.Build(inv, radar.Policy{}, &compact, "")
+	unchanged, err := radar.BuildWithOptions(inv, radar.Policy{}, &compact, "", radar.BuildOptions{})
 	if err != nil || unchanged.Findings[0].ReviewRequired {
 		t.Fatalf("compact replay falsely invalidated approval: %v", err)
 	}

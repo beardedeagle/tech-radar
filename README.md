@@ -4,11 +4,13 @@ Point it at a repo, review what it finds, and commit the radar with your code.
 
 tech-radar builds a [Thoughtworks-style technology radar](https://www.thoughtworks.com/en-us/radar) from repository evidence. It identifies languages, frameworks, tools, platforms, and integrations, then proposes which choices belong on the main radar. Related findings share an entry. The full observations remain in a separate JSON file.
 
-Teams record their decisions in explicit policy files and update the report through PRs. The CLI also collects several repositories into a shared checklist and checks observed use for policy violations and drift. A shared Codex and Claude Code plugin can investigate unfamiliar relationships and prepare proposed inputs for review.
+For a decision-led radar, `--model lifecycle` places technologies in Experiment, Adopt, Hold, or Retire using supplied lifecycle decisions. Candidates without a lifecycle decision remain visible as Needs decision. The default `recommendation` model keeps the proposed rings described above. See the [lifecycle walkthrough](https://beardedeagle.github.io/tech-radar/docs/guides/lifecycle/).
+
+Teams record their decisions in explicit policy files and update the report through PRs. The CLI also collects several repositories into a shared checklist and checks observed use for policy violations and drift. A shared Codex and Claude Code plugin can investigate repository documentation and explicitly scoped Google Drive material through host integrations, then prepare proposed inputs for review.
 
 ## Build and run
 
-Requires Go **1.26.4 or later** and [just](https://just.systems/). From the project root:
+Requires Go **1.26.7 or later** and [just](https://just.systems/). From the project root:
 
 ```sh
 just build
@@ -17,7 +19,7 @@ just build
 
 Open `RADAR.html` in a browser. Hover or focus a marker for details and select its number to inspect the entry. The report follows system light or dark appearance and includes an explicit theme choice.
 
-Commit the report and its linked `RADAR.evidence.<sha256>.json` file. Markdown output uses a matrix and findings table. JSON keeps the full report; `--self-contained` embeds evidence in Markdown or HTML when a one-file export is needed.
+Commit the report and its linked `RADAR.evidence.<sha256>.json` file. The default recommendation view uses a radar in HTML and a matrix with findings in Markdown. Lifecycle defaults to a decision table. Use `--view radar|table` to choose either layout. JSON keeps the full report. `--self-contained` embeds evidence in Markdown or HTML when a one-file export is needed.
 
 The [first-radar walkthrough](https://beardedeagle.github.io/tech-radar/docs/getting-started/first-radar/) creates a synthetic application, runs the scan, explains the proposed rings, and shows the files you should see. It needs no Node runtime, package installation, or GitHub access.
 
@@ -28,6 +30,7 @@ The [handbook](https://beardedeagle.github.io/tech-radar/) provides reading path
 | Task | Documentation |
 | --- | --- |
 | Understand findings, profiles, groups, and proposals | [How the radar is built](https://beardedeagle.github.io/tech-radar/docs/concepts/how-it-works/) |
+| Build a lifecycle radar from supplied decisions | [Lifecycle walkthrough](https://beardedeagle.github.io/tech-radar/docs/guides/lifecycle/) |
 | Record decisions and update a report | [Review and update](https://beardedeagle.github.io/tech-radar/docs/guides/review-and-update/) |
 | Recognize internal names or group unfamiliar packages | [Detection and grouping](https://beardedeagle.github.io/tech-radar/docs/guides/detect-and-group/) |
 | Collect local repositories or a GitHub organization | [Shared discovery](https://beardedeagle.github.io/tech-radar/docs/guides/discover/) |

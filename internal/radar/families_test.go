@@ -26,14 +26,8 @@ end
 	fixture(t, root, "lib/app/storage.ex", "ExAws.S3.get_object(bucket, key)\n")
 	fixture(t, root, "config/runtime.exs", "ExAws.KMS.encrypt(key, data)\n")
 	fixture(t, root, "CLAUDE.md", "Use Ash-first domain modeling.\n")
-	inv, err := Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	r, err := Build(inv, Policy{}, nil, "Demo")
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{})
+	r := buildTestReport(t, inv, Policy{}, nil, "Demo", BuildOptions{})
 	want := map[string][]string{
 		"Amazon Web Services":   {"amazon-s3", "aws-kms", "hex:ex_aws"},
 		"Ash Framework":         {"ash", "ash-ai", "ash-authentication", "ash-first"},
@@ -78,10 +72,7 @@ end
 
 	decision := Decision{Ring: "Caution", Scope: "Encryption", Rationale: "Review key ownership", Status: "approved", Owner: "Team", Reference: "PR #3", Reviewed: "2026-11-01"}
 	policy := Policy{Rules: map[string]Decision{"aws-kms": decision, "ash-ai": {Exclude: true, Rationale: "Outside this radar's scope"}}}
-	decided, err := Build(inv, policy, &r, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	decided := buildTestReport(t, inv, policy, &r, "", BuildOptions{})
 	data, err := RenderDocument(decided, "markdown", "evidence.json", strings.Repeat("a", 64))
 	if err != nil {
 		t.Fatal(err)
@@ -90,10 +81,7 @@ end
 	if err != nil {
 		t.Fatal(err)
 	}
-	next, err := Build(inv, Policy{}, &saved, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	next := buildTestReport(t, inv, Policy{}, &saved, "", BuildOptions{})
 	if next.Decisions["aws-kms"] != decision || !next.Decisions["ash-ai"].Exclude {
 		t.Fatal("family replay lost a decision or exclusion")
 	}
@@ -135,10 +123,7 @@ func TestSuggestedAdoptRequiresUseEvidence(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			inv := Inventory{Source: Source{Fingerprint: strings.Repeat("a", 64)}, Findings: []Finding{{ID: "req", Name: "Req", Quadrant: "Tools", Presence: "detected", Evidence: tt.evidence, EvidenceCount: len(tt.evidence)}}}
-			r, err := Build(inv, Policy{}, nil, "Demo")
-			if err != nil {
-				t.Fatal(err)
-			}
+			r := buildTestReport(t, inv, Policy{}, nil, "Demo", BuildOptions{})
 			f := r.Findings[0]
 			if ring(f) != tt.want {
 				t.Fatalf("got %s, want %s", ring(f), tt.want)

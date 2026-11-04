@@ -50,7 +50,19 @@ Scope: `component` or `repository`. Framework ownership usually needs component 
 
 ## Display decisions
 
-The `--policy` input to `generate` records display decisions, with schema version 1 and a `rules` object keyed by finding ID. A proposed choice needs ring, scope and rationale. Approved choices additionally require status, owner, reference and reviewed date. Excluding a display finding does not exempt it from enforcement.
+The `--policy` input to `generate` records display decisions, with schema version 1 and a `rules` object keyed by finding ID. An optional top-level `model` selects `recommendation` or `lifecycle`. Explicit CLI and policy models must agree. Omitted models inherit the policy, previous report, or default `recommendation`.
+
+In recommendation mode, a proposed choice needs `ring`, `scope` and `rationale`. Approved choices additionally require status, owner, reference and reviewed date. Rings remain Adopt, Trial, Assess and Caution, and `lifecycle` remains separate free text.
+
+In lifecycle mode, `lifecycle` selects Experiment, Adopt, Hold or Retire, matched case-insensitively and saved in canonical case. The rings run outward from Adopt through Experiment and Hold to Retire. Proposed placements need scope and rationale. Approved placements also need owner and a valid reviewed date. References may be missing, including for approved lifecycle decisions. Candidates without a lifecycle placement remain Needs decision.
+
+A reference can name a repository docs path, ADR, PR URL, Drive document URL or another explicit decision record. The CLI consumes the supplied value. The agent investigates its contents and status through authorized repository or host integrations. On initial generation without `--previous`, missing references create no missing-material gap. Other review reasons remain. Every lifecycle run with `--previous` flags included technologies without references as `missing_decision_material`, separately from source absence and enforcement. A baseline becomes subsequent when passed as `--previous`.
+
+Current entries replace whole saved decisions by ID. Omitted entries carry forward.
+
+The optional report `view` is `radar` or `table` and remains separate from policy. `--view` overrides a same-model previous view. Otherwise generation defaults to table for lifecycle or radar for recommendation. View-only changes preserve decisions, evidence and placement history. HTML table view uses state badges and native evidence/member disclosure. Markdown table view has decision rows, and Markdown radar view keeps its matrix. JSON retains full state. Passing an initial baseline as `--previous` activates subsequent-generation review even when changing only the view.
+
+A model switch resets placement comparison. Carried approvals require explicit target-model replacements before approving target placements. Incompatible records cause an error requesting complete replacements. Preserve differing member states, rationale and scope. A parent approval does not approve its members. Excluding a display finding does not exempt it from enforcement.
 
 ## Enforcement standard
 

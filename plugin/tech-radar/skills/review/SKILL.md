@@ -1,17 +1,19 @@
 ---
 name: review
-description: Inspect repository technology choices, propose groups from source evidence, generate a radar and check approved policy.
+description: Investigate technology choices and scoped decision docs, propose lifecycle or recommendation inputs, generate a radar and check approved policy.
 ---
 
 # Tech Radar
 
-Use the Go CLI for collection, generation and policy checks. Inspect the repository to explain its major technology choices and propose useful groups. This workflow is shared by Codex and Claude Code.
+Use the Go CLI for collection, generation and policy checks. Inspect repository evidence and decision documentation to explain technology choices and propose useful groups and display decisions. This workflow is shared by Codex and Claude Code.
 
 Read [runtime input formats](references/inputs.md) before editing detection, grouping or policy files.
 
 ## Set up
 
 Use the user's repo, organization or repo list. Ask if the target is missing. Respect repository instructions and existing changes. Use an installed `tech-radar`, or build this project's `cmd/tech-radar` with its documented Go version. Never download or execute an unverified program with that name.
+
+Establish the requested model, `recommendation` or `lifecycle`, and any prior report. The default recommendation model retains Adopt, Trial, Assess and Caution. Lifecycle uses supplied Experiment, Adopt, Hold and Retire decisions. Hold means continuing existing use while directing or restricting new work elsewhere within the recorded scope. Establish any requested `--view radar|table`. Lifecycle defaults to table and recommendation defaults to radar, with same-model prior-view inheritance.
 
 Agree on output paths and explicit inputs: detection rules, grouping, display policy, approved enforcement policy, exceptions and baseline. Preserve reviewed files and keep private inputs/results outside the public tool or plugin. Do not find or apply another organization's policy automatically.
 
@@ -40,6 +42,16 @@ Present a short review with:
 
 Use sanitized descriptions for new detection rules. Do not include source excerpts, credential-bearing URLs or configuration values. If a reader or rule cannot represent an observation, report the gap; do not call the technology absent or compliant.
 
+## Investigate decision material
+
+Read repository architecture docs, ADRs, decision logs and linked PR records relevant to the findings. Inspect supplied or explicitly scoped Google Drive documents or folders through integrations already available in the host. Stay within that scope. If access is missing, record an access limitation and continue with authorized sources. Respect the initial lifecycle baseline exception when decision material is unavailable. The Go CLI consumes references supplied in policy.
+
+For each proposed decision, retain the finding ID, model, lifecycle or recommendation placement, scope, rationale, source status and precise evidence. Cite repository-relative paths and line numbers, PR URLs and relevant comments, or Drive document URLs and section headings. Record document revision or review date when available. Distinguish inaccessible sources, drafts, proposals, approvals and superseded decisions. Explain contradictions and unknown authority. A link or a scanner hit alone establishes neither adoption nor approval.
+
+Missing material is normal on an initial lifecycle baseline without `--previous`. It creates no missing-material gap on that generation. Proposed status, missing lifecycle placement, source absence and other review reasons still apply. Every lifecycle generation with `--previous`, including unchanged input or a previous recommendation report, flags included technologies without decision references. Keep missing decision material separate from source absence and enforcement gaps.
+
+Draft display decisions in a separate proposed policy file. Preserve approved inputs and approval metadata. Obtain review of substantive lifecycle, recommendation, detection and grouping proposals before using them. Never invent an owner, reference, review date or approval. Keep private source content and references in the user's authorized storage, outside this public tool or plugin.
+
 ## Review and generate
 
 Save proposed groups as schema-1 JSON with members, relationship and scope. Show the evidence and obtain review of substantive changes before using them. Valid JSON alone does not establish a relationship.
@@ -50,7 +62,13 @@ tech-radar generate --repo /path/to/repo \
   --format html --out /path/to/run/TECHNOLOGY_RADAR.html
 ```
 
+Use `--view radar|table` for an explicit layout choice. View-only changes preserve decisions, evidence and placement history. Passing an initial lifecycle baseline as `--previous` still activates missing-material review gaps. Table view shows decision rows, state badges in HTML, and available evidence/member disclosures. Radar view retains the chart or Markdown matrix. JSON retains full report state.
+
+For a lifecycle report, add `--model lifecycle` or use a policy with `"model": "lifecycle"`. Supply canonical placements in `lifecycle`, matched case-insensitively. Unplaced candidates remain Needs decision. Keep differing member states, rationales and approval scopes separate. A parent decision does not approve its members.
+
 Include supplied `--rules`, `--context`, display `--policy` and `--previous`. Preserve those reviewed inputs: model interpretation can vary, while CLI generation from saved inputs is deterministic. Keep the evidence companion beside the report. Use `--force` only for an intended update of an intact generated export. Never remove locks or bypass write protection.
+
+An omitted model inherits the policy model, previous report model, or `recommendation`. Explicit CLI and policy models must agree. An intentional switch resets placement comparison. Carried approvals require complete target-model replacements before they can approve target placements. If the CLI requests replacements, obtain them without discarding or demoting the saved approval. Never translate Trial, Assess or Caution into a lifecycle state.
 
 ## Check policy and drift
 

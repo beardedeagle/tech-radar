@@ -96,6 +96,12 @@ Markdown contains a matrix and main-findings table instead of the interactive di
 
 To share one file, add `--self-contained` when generating Markdown or HTML. That embeds the full evidence and increases the document size.
 
+## Try a lifecycle baseline
+
+The commands above use the default `recommendation` model. To place entries from supplied lifecycle decisions, follow the [lifecycle walkthrough](../guides/lifecycle.md). It reuses this application and adds a proposed policy. Lifecycle defaults to a decision table, while this recommendation walkthrough defaults to a radar. Use `--view radar|table` for an explicit layout choice with either model. You can also scan without decisions using `--model lifecycle`, which leaves candidates in Needs decision.
+
+A first generation has no `--previous`. Missing decision material is normal at that baseline and creates no missing-material gap. Proposed status, missing lifecycle placement, and source absence still require review. Once you pass any report as `--previous`, the CLI flags included technologies that lack decision references.
+
 ## A real repository
 
 [tech-radar scans itself](../guides/tech-radar-example/index.md) shows a populated radar from this project, with the raw scan and the display decisions used to name and place its libraries.

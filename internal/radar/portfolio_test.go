@@ -215,10 +215,7 @@ func TestContextKeepsExplicitRulesForPortfolioManifests(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	inv, err := ScanWithContext(root, rules, c)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{Rules: rules, Context: c})
 	found := false
 	for _, f := range inv.Findings {
 		found = found || f.ID == "example-transport"
@@ -239,34 +236,19 @@ func TestContextLocalRoleChangesRequireApprovalReview(t *testing.T) {
 	if err := os.WriteFile(manifest, []byte("fastapi\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	inv, err := ScanWithContext(root, DetectionRules{}, c)
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, root, ScanOptions{Rules: DetectionRules{}, Context: c})
 	policy := Policy{Rules: map[string]Decision{"python": {Status: "approved", Ring: "Adopt", Scope: "local API", Rationale: "team decision", Owner: "team", Reviewed: "2026-10-31", Reference: "review-1"}}}
-	prior, err := Build(inv, policy, nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	prior := buildTestReport(t, inv, policy, nil, "", BuildOptions{})
 	if err := os.WriteFile(manifest, []byte("fastapi\nlanggraph\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	inv, err = ScanWithContext(root, DetectionRules{}, c)
-	if err != nil {
-		t.Fatal(err)
-	}
-	report, err := Build(inv, Policy{}, &prior, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv = scanTestRepository(t, root, ScanOptions{Rules: DetectionRules{}, Context: c})
+	report := buildTestReport(t, inv, Policy{}, &prior, "", BuildOptions{})
 	f := finding(t, Inventory{Findings: report.Findings}, "python")
 	if !f.EvidenceChanged || !f.ReviewRequired || f.Decision != policy.Rules["python"] {
 		t.Fatal("same-pack local role change silently reused approval")
 	}
-	again, err := Build(inv, Policy{}, &report, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	again := buildTestReport(t, inv, Policy{}, &report, "", BuildOptions{})
 	if !finding(t, Inventory{Findings: again.Findings}, "python").ReviewRequired {
 		t.Fatal("replay cleared pending review")
 	}
@@ -287,10 +269,7 @@ func TestPortfolioUsesNearestComponentForShortPaths(t *testing.T) {
 			fixture(t, root, "package.json", `{"dependencies":{"react":"19"}}`)
 			fixture(t, root, child+"/go.mod", "module example.org/worker\n\ngo 1.26\n")
 			fixture(t, root, child+"/helper.py", "print(1)\n")
-			inv, err := Scan(root)
-			if err != nil {
-				t.Fatal(err)
-			}
+			inv := scanTestRepository(t, root, ScanOptions{})
 			f := finding(t, inv, "python")
 			got := assessPortfolio(f, inv.Components)
 			if len(got.Profiles) != 1 || got.Profiles[0] != "go_service" {
@@ -339,19 +318,13 @@ func TestCorrectedComponentProfileRequestsReview(t *testing.T) {
 	}
 	inv := pack.Repositories()[0].Inventory
 	policy := Policy{Rules: map[string]Decision{"go": {Status: "approved", Ring: "Adopt", Scope: "worker", Rationale: "team choice", Owner: "team", Reference: "review-1", Reviewed: "2026-11-01"}}}
-	prior, err := Build(inv, policy, nil, "example")
-	if err != nil {
-		t.Fatal(err)
-	}
+	prior := buildTestReport(t, inv, policy, nil, "example", BuildOptions{})
 	prior.RuleVersion = "context-3"
 	for i := range prior.Findings {
 		a := assessPortfolioVersion(prior.Findings[i], inv.Components, "portfolio-2")
 		prior.Findings[i].Assessment = &a
 	}
-	updated, err := Build(inv, Policy{}, &prior, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	updated := buildTestReport(t, inv, Policy{}, &prior, "", BuildOptions{})
 	f := finding(t, Inventory{Findings: updated.Findings}, "go")
 	if !f.EvidenceChanged || !f.ReviewRequired || f.Decision != policy.Rules["go"] {
 		t.Fatal("corrected profile silently reused approval or lost the team's decision")

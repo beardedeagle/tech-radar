@@ -16,7 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## go-gh license
 
-GitHub collection imports **github.com/cli/go-gh/v2 v2.16.2**, https://github.com/cli/go-gh, under the MIT License. Dependencies are listed in go.mod and go.sum under their own licenses.
+GitHub collection imports **github.com/cli/go-gh/v2 v2.17.0**, https://github.com/cli/go-gh, under the MIT License. Dependencies are listed in go.mod and go.sum under their own licenses.
 
 MIT License
 
@@ -77,9 +77,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Quadrants and recommendation rings follow the Thoughtworks Technology Radar model, Volume 34 (April 2026): https://www.thoughtworks.com/en-us/radar. Reports contain your team's recommendations. Thoughtworks does not endorse them.
 
+The lifecycle model follows [Scaling the Practice of Architecture, Conversationally](https://martinfowler.com/articles/scaling-architecture-conversationally.html).
+
 ## Masterminds SemVer
 
-Version constraints use **github.com/Masterminds/semver/v3 v3.3.0**, https://github.com/Masterminds/semver, under the MIT License. The pinned version was already selected transitively; this project now imports it directly for policy checks.
+Version constraints use **github.com/Masterminds/semver/v3 v3.5.0**, https://github.com/Masterminds/semver, under the MIT License.
 
 Copyright (C) 2014-2019, Matt Butcher and Matt Farina
 

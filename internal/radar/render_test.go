@@ -13,18 +13,58 @@ import (
 	"testing"
 )
 
+// Successful fixture setup uses the canonical APIs with all options visible.
+// Tests that expect validation or filesystem errors call those APIs directly.
+func scanTestRepository(t *testing.T, root string, options ScanOptions) Inventory {
+	t.Helper()
+	inv, err := ScanWithOptions(root, options)
+	if err != nil {
+		t.Fatalf("scan fixture %q: %v", root, err)
+	}
+	return inv
+}
+
+func buildTestReport(t *testing.T, inv Inventory, policy Policy, previous *Report, name string, options BuildOptions) Report {
+	t.Helper()
+	r, err := BuildWithOptions(inv, policy, previous, name, options)
+	if err != nil {
+		t.Fatalf("build report %q (model=%q, view=%q): %v", name, options.Model, options.View, err)
+	}
+	return r
+}
+
+// renderTestExport exercises the full or portable document pipeline without
+// rendering an unused full document before a compact one.
+func renderTestExport(t *testing.T, r Report, format string, compact bool) []byte {
+	t.Helper()
+	var data []byte
+	var err error
+	if compact {
+		data, err = RenderDocument(r, format, "evidence.json", strings.Repeat("a", 64))
+	} else {
+		data, err = Render(r, format)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
+}
+
+func readTestReport(t *testing.T, data []byte) Report {
+	t.Helper()
+	r, err := ReadReport(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return r
+}
+
 func TestReportWordingKeepsSavedStateAndTeamText(t *testing.T) {
 	s := capturedFixture(t, "web", "mix.exs", "defp deps do\n[\n{:phoenix, \"1.8\"}\n]\nend\n")
 	teamText := "Investigate this declared/referenced architectural choice and confirm its scope, ownership and current use before recommending commitment."
-	r, err := Build(s.Inventory, Policy{Rules: map[string]Decision{"phoenix": {Ring: "Assess", Scope: "web app", Rationale: teamText}}}, nil, "example")
-	if err != nil {
-		t.Fatal(err)
-	}
+	r := buildTestReport(t, s.Inventory, Policy{Rules: map[string]Decision{"phoenix": {Ring: "Assess", Scope: "web app", Rationale: teamText}}}, nil, "example", BuildOptions{})
 	module := capturedFixture(t, "module", "go.mod", "module example.org/module\n\ngo 1.26\n")
-	goReport, err := Build(module.Inventory, Policy{Rules: map[string]Decision{"go": {Ring: "Assess", Scope: "module", Rationale: teamText}}}, nil, "example")
-	if err != nil {
-		t.Fatal(err)
-	}
+	goReport := buildTestReport(t, module.Inventory, Policy{Rules: map[string]Decision{"go": {Ring: "Assess", Scope: "module", Rationale: teamText}}}, nil, "example", BuildOptions{})
 	for _, r := range []Report{r, goReport} {
 		before, err := Render(r, "json")
 		if err != nil {
@@ -32,15 +72,7 @@ func TestReportWordingKeepsSavedStateAndTeamText(t *testing.T) {
 		}
 		for _, format := range []string{"markdown", "html"} {
 			for _, concise := range []bool{false, true} {
-				var data []byte
-				if concise {
-					data, err = RenderDocument(r, format, "evidence.json", strings.Repeat("a", 64))
-				} else {
-					data, err = Render(r, format)
-				}
-				if err != nil {
-					t.Fatal(err)
-				}
+				data := renderTestExport(t, r, format, concise)
 				body := html.UnescapeString(strings.SplitN(string(data), snapshotStart, 2)[0])
 				if strings.Contains(body, "native execution/domain/data boundary") || strings.Contains(body, "service role unverified") || strings.Contains(body, "beam_web_data") || strings.Contains(body, "go_service") {
 					t.Fatal("internal profile metadata leaked into the displayed report")
@@ -63,10 +95,7 @@ func TestTrialRingFitsArchitecturalFindingsWithoutOverlappingMarkers(t *testing.
 		id := fmt.Sprintf("platform-%02d", i)
 		policy.Rules[id] = Decision{Name: id, Quadrant: "Platforms", Ring: "Trial", Scope: "Demo", Rationale: "Review candidate"}
 	}
-	r, err := Build(Inventory{Source: Source{Fingerprint: strings.Repeat("a", 64)}}, policy, nil, "Dense radar")
-	if err != nil {
-		t.Fatal(err)
-	}
+	r := buildTestReport(t, Inventory{Source: Source{Fingerprint: strings.Repeat("a", 64)}}, policy, nil, "Dense radar", BuildOptions{})
 	b, err := Render(r, "html")
 	if err != nil {
 		t.Fatal(err)
@@ -75,6 +104,9 @@ func TestTrialRingFitsArchitecturalFindingsWithoutOverlappingMarkers(t *testing.
 		t.Fatal("architectural findings overflow a ring with space for two marker rows")
 	}
 	matches := regexp.MustCompile(`cx="([0-9.]+)" cy="([0-9.]+)" r="15"`).FindAllStringSubmatch(string(b), -1)
+	if len(matches) != 15 {
+		t.Fatalf("expected 15 marker coordinates, got %d", len(matches))
+	}
 	for i, a := range matches {
 		x, _ := strconv.ParseFloat(a[1], 64)
 		y, _ := strconv.ParseFloat(a[2], 64)
@@ -89,14 +121,8 @@ func TestTrialRingFitsArchitecturalFindingsWithoutOverlappingMarkers(t *testing.
 }
 
 func TestEstablishedFrameworkPlotsInsideAdopt(t *testing.T) {
-	inv, err := Scan(beamFixture(t))
-	if err != nil {
-		t.Fatal(err)
-	}
-	r, err := Build(inv, Policy{}, nil, "Demo")
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, beamFixture(t), ScanOptions{})
+	r := buildTestReport(t, inv, Policy{}, nil, "Demo", BuildOptions{})
 	f := finding(t, Inventory{Findings: r.Findings}, "phoenix")
 	b, err := RenderDocument(r, "html", "evidence.json", strings.Repeat("a", 64))
 	if err != nil {
@@ -115,14 +141,8 @@ func TestEstablishedFrameworkPlotsInsideAdopt(t *testing.T) {
 }
 
 func TestReportRejectsForgedProposalAndEscapingEvidenceReference(t *testing.T) {
-	inv, err := Scan(beamFixture(t))
-	if err != nil {
-		t.Fatal(err)
-	}
-	r, err := Build(inv, Policy{}, nil, "Demo")
-	if err != nil {
-		t.Fatal(err)
-	}
+	inv := scanTestRepository(t, beamFixture(t), ScanOptions{})
+	r := buildTestReport(t, inv, Policy{}, nil, "Demo", BuildOptions{})
 	b, _ := Render(r, "json")
 	if _, err := RenderDocument(r, "html", "", ""); err == nil {
 		t.Fatal("concise document accepted a missing evidence reference")
@@ -151,34 +171,19 @@ func TestReportRejectsForgedProposalAndEscapingEvidenceReference(t *testing.T) {
 
 func TestExportRoundTripsDecisionsAndEvidence(t *testing.T) {
 	p := Policy{SchemaVersion: 1, Repository: "ExampleApp", Rules: map[string]Decision{"python": {Exclude: true, Rationale: "Team excludes scripting languages"}, "phoenix": {Ring: "Adopt", Scope: "ExampleApp web", Rationale: "Team proposal"}}}
-	r, err := Build(inventoryForTests(), p, nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	r := buildTestReport(t, inventoryForTests(), p, nil, "", BuildOptions{})
 	for _, format := range []string{"markdown", "html", "json"} {
 		t.Run(format, func(t *testing.T) {
-			output, err := Render(r, format)
-			if err != nil {
-				t.Fatal(err)
-			}
-			recovered, err := ReadReport(output)
-			if err != nil {
-				t.Fatal(err)
-			}
+			output := renderTestExport(t, r, format, false)
+			recovered := readTestReport(t, output)
 			if !reflect.DeepEqual(r, recovered) {
 				t.Fatalf("round trip lost report state:\n%#v\n%#v", r, recovered)
 			}
-			again, err := Render(r, format)
-			if err != nil {
-				t.Fatal(err)
-			}
+			again := renderTestExport(t, r, format, false)
 			if !bytes.Equal(output, again) {
 				t.Fatal("output is not deterministic")
 			}
-			next, err := Build(inventoryForTests(), Policy{}, &recovered, "")
-			if err != nil {
-				t.Fatal(err)
-			}
+			next := buildTestReport(t, inventoryForTests(), Policy{}, &recovered, "", BuildOptions{})
 			if len(next.Findings) != 1 || next.Findings[0].Decision.Ring != "Adopt" {
 				t.Fatal("reimported policy was not preserved")
 			}
@@ -187,10 +192,7 @@ func TestExportRoundTripsDecisionsAndEvidence(t *testing.T) {
 }
 
 func TestRejectsEditedOrIncompleteGeneratedDocument(t *testing.T) {
-	r, err := Build(inventoryForTests(), Policy{}, nil, "ExampleApp")
-	if err != nil {
-		t.Fatal(err)
-	}
+	r := buildTestReport(t, inventoryForTests(), Policy{}, nil, "ExampleApp", BuildOptions{})
 	for _, format := range []string{"markdown", "html"} {
 		b, err := Render(r, format)
 		if err != nil {
@@ -207,10 +209,7 @@ func TestRejectsEditedOrIncompleteGeneratedDocument(t *testing.T) {
 }
 
 func TestExportEscapesPolicyMarkup(t *testing.T) {
-	r, err := Build(inventoryForTests(), Policy{SchemaVersion: 1, Rules: map[string]Decision{"phoenix": {Name: "Framework | <script>alert(1)</script>", Ring: "Assess", Scope: "Test", Rationale: "Review </script> markup"}}}, nil, "ExampleApp")
-	if err != nil {
-		t.Fatal(err)
-	}
+	r := buildTestReport(t, inventoryForTests(), Policy{SchemaVersion: 1, Rules: map[string]Decision{"phoenix": {Name: "Framework | <script>alert(1)</script>", Ring: "Assess", Scope: "Test", Rationale: "Review </script> markup"}}}, nil, "ExampleApp", BuildOptions{})
 	b, err := Render(r, "html")
 	if err != nil {
 		t.Fatal(err)

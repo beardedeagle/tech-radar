@@ -8,7 +8,7 @@ weight: 40
 | Lookup | Chapter |
 | --- | --- |
 | Commands, flags, formats, and exit codes | [CLI](cli.md) |
-| Team placements, exclusions, manual candidates, and approvals | [Display policy](display-policy.md) |
+| Recommendation and lifecycle placements, exclusions, manual candidates, and approvals | [Display policy](display-policy.md) |
 | Additional recognition patterns | [Detection rules](detection.md) |
 | Related-technology families and overrides | [Grouping](grouping.md) |
 | Enforcement rules, versions, exceptions, and baselines | [Enforcement policy](policy.md) |

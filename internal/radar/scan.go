@@ -15,6 +15,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -63,32 +64,11 @@ func ScanWithOptions(root string, options ScanOptions) (Inventory, error) {
 	return inv, err
 }
 
-func Scan(root string) (Inventory, error) {
-	return ScanWithRules(root, DetectionRules{})
-}
-
-// ScanWithRules scans the repo with additional detection patterns.
-// The rules file is excluded, even if it's inside the repo.
-// Filesystem errors include the path that couldn't be read.
-func ScanWithRules(root string, rules DetectionRules) (Inventory, error) {
-	inv, _, err := scanRepository(root, rules, false, Context{})
-	return inv, err
-}
-
 // CaptureRepository collects findings and file hashes for discovery.
 // It reads eligible files inside the repo and omits absolute paths and raw values.
 // ignored holds SHA-256 digests of explicit runtime inputs to omit from capture.
 func CaptureRepository(root string, rules DetectionRules, ignored ...[32]byte) (Inventory, []FileHash, error) {
 	return scanRepository(root, rules, true, Context{}, ignored...)
-}
-
-// ScanWithContext scans the repo using a validated shared checklist.
-func ScanWithContext(root string, rules DetectionRules, pack Context) (Inventory, error) {
-	if pack.fingerprint == "" {
-		return Inventory{}, fmt.Errorf("context is not validated")
-	}
-	inv, _, err := scanRepository(root, rules, true, pack)
-	return inv, err
 }
 
 func scanRepository(root string, rules DetectionRules, extended bool, pack Context, ignored ...[32]byte) (Inventory, []FileHash, error) {
@@ -662,7 +642,28 @@ var patterns = []sourcePattern{
 }
 
 func readGitHead(ctx context.Context, root string) string {
+	localEnv := exec.CommandContext(ctx, "git", "rev-parse", "--local-env-vars")
+	localEnv.WaitDelay = 100 * time.Millisecond
+	names, err := localEnv.Output()
+	if err != nil {
+		return ""
+	}
+	// Hooks export repository-local settings that override Git's -C selection.
+	localNames := make(map[string]bool)
+	for name := range strings.FieldsSeq(string(names)) {
+		localNames[name] = true
+	}
 	cmd := exec.CommandContext(ctx, "git", "-C", root, "rev-parse", "--verify", "HEAD")
+	cmd.Env = []string{}
+	for _, value := range os.Environ() {
+		name, _, _ := strings.Cut(value, "=")
+		if runtime.GOOS == "windows" {
+			name = strings.ToUpper(name)
+		}
+		if !localNames[name] {
+			cmd.Env = append(cmd.Env, value)
+		}
+	}
 	cmd.WaitDelay = 100 * time.Millisecond
 	if b, err := cmd.Output(); err == nil && gitHeadPattern.Match(bytes.TrimSpace(b)) {
 		return strings.TrimSpace(string(b))

@@ -9,6 +9,8 @@ A generated report starts the review. Use the evidence to decide which technolog
 
 ## Review the proposed entries
 
+This page starts with the default `recommendation` model. For Experiment, Adopt, Hold, and Retire decisions, use the [lifecycle walkthrough](lifecycle.md).
+
 Start with the main findings and inspect each entry's source locations in the linked evidence. Check grouped members as well as the representative. A shared vendor or similar name does not establish that independently owned systems should be reviewed together.
 
 | Ring | Team intent |
@@ -19,7 +21,7 @@ Start with the main findings and inspect each entry's source locations in the li
 | Caution | Review the recorded concerns before proceeding. |
 | Needs review | No placement is recorded or proposed. This is a report category, not a fifth ring. |
 
-Rings do not have to be followed in order. Record lifecycle states such as maintain, retire, or retired in the separate `lifecycle` field.
+Recommendation rings do not have to be followed in order. In this model, record lifecycle states such as maintain, retire, or retired in the separate `lifecycle` field.
 
 ## Record a decision
 
@@ -69,9 +71,11 @@ Changed evidence or classification keeps the decision and requests review. After
 
 ## Read placement changes
 
-An outer circle means a new radar entry. An arc means a ring or quadrant change, with details in the tooltip. A plain marker means unchanged placement or unavailable comparison history; the tooltip identifies which.
+In radar view, an outer circle means a new radar entry. An arc means a ring or quadrant change, with details in the tooltip. A plain marker means unchanged placement or unavailable comparison history; the tooltip identifies which.
 
-Evidence changes alone do not count as placement movement. An unchanged regeneration preserves the existing comparison and badges. A family can retain its comparison even when a different detected member becomes its representative.
+Table view records changes and review reasons in its rows. Use `--view table` to select it. An omitted view inherits a same-model previous report, otherwise recommendation defaults to radar and lifecycle defaults to table. View-only changes preserve decisions, evidence, and placement history.
+
+Evidence changes alone do not count as placement movement. An unchanged regeneration preserves the existing comparison and badges. Switching models starts a fresh placement comparison, so a recommendation ring does not become lifecycle movement. A family can retain its comparison even when a different detected member becomes its representative.
 
 Keep the evidence companion beside the document. Without it, saved decisions still carry forward, but older compact exports can lack inferred placement history and source locations for findings that disappeared.
 
