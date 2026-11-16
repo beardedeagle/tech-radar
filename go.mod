@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/boyter/scc/v4 v4.1.0
 	github.com/cli/go-gh/v2 v2.17.0
-	github.com/gofrs/flock v0.13.1
+	github.com/gofrs/flock v0.13.2
 )
 
 require (
